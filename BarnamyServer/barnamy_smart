@@ -1,0 +1,233 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+import ConfigParser
+import os
+import sys
+from os.path import expanduser
+from Model.barnamydb import Barnamydb
+import string
+import random
+
+BARNAMY_CONF_DIR = expanduser("~/.barnamy")
+BARNAMY_CONF_D_FILE = BARNAMY_CONF_DIR + "/barnamyd.conf"
+BARNAMY_CONF_C_FILE = BARNAMY_CONF_DIR + "/barnamyc.conf"
+YES = ["y", "Y", "yes", "YES"]
+NO = ["n", "N", "no", "NO"]
+db = Barnamydb()
+
+import platform
+
+
+print ""
+print "welcome to Barnamy 0.1 on %s" %platform.platform()
+print 'Barnamy tool config Type "help", "copyright", "credits" or "license" for more information.'
+if not db.check_dup_user('barnamyadmin'):
+    gen_passwd = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))
+    email = ''
+    while not email:
+        email = raw_input('Before you start please enter a valid email for admin: ')
+        while db.check_dup_email(email):
+            email = raw_input('Before you start please enter a valid email for admin: ')
+
+    db.save_user_by_admin('barnamyadmin', email, gen_passwd)
+    print "We create a super user for your Barnamy please remeber it and do not share it with anyone"
+
+    print '\033[1m' + "user : 'barnamyadmin'| password : %s"%gen_passwd + '\033[0m'
+    print "if you want to modify it, enter " + '\033[1m' + "barnamy_admin new [password | email] please enjoy" + '\033[0m'
+else:
+    passwd = raw_input('Please enter barnamyadmin password: ')
+    tries  = 0
+    while not db.check_user('barnamyadmin', passwd):
+        passwd = raw_input('Please enter barnamyadmin password: ')
+        tries += 1
+        if tries == 2:
+            print 'You try 3 times Barnamy will be closed.'
+            sys.exit()
+print ""
+
+cmd = ""
+
+def register_user():
+    nick = raw_input("Enter nick: ")
+    while len(nick) < 3 and len(nick) > 10:
+        nick = raw_input("Check nick lenght! enter new nick: ")
+    while db.check_dup_user(nick):
+        nick = raw_input("This nick is registered! enter new nickl: ")
+
+    email = raw_input("Enter email: ")
+    while db.check_dup_email(email):
+        email = raw_input("This email is registered enter new email: ")
+
+    passwd = raw_input("Enter password: ")
+    while(len(passwd) < 3):
+        passwd = raw_input("Check password lenght! enter new password: ")
+    passwd_confirm = raw_input("Re-enter your password: ")
+
+    while passwd != passwd_confirm:
+        passwd = raw_input("Password not match! enter password: ")
+        passwd_confirm = raw_input("Re-enter your password: ")
+
+    db.save_user_by_admin(nick, email, passwd)
+
+    print "User %s is saved" %nick
+    print ""
+
+while cmd != "exit":
+    try:
+        if cmd == "help":
+
+            print """
+    \t0- Setup server config (local server)
+    \t1- Setup client config
+    \t2- Add user
+    \t3- Add list of users
+    \t4- Deactive user
+    \t5- Check users message
+    \t6- Check register requests sent by user(s)
+    \t7- Bane User
+    \tAdvanced : "barnamy_admin new password" to set a new admin password
+                 "user new password"
+    """
+        if cmd == str(0):
+            print "You are going setup you barnamy local server"
+            db = raw_input("select dabase (s)qlite | (m)ongodb | ma(r)iadb | (p)ostgresql: ")
+            user_no = input("select number of users in your server: ")
+            tls = raw_input("Tls (y)es/(n)o: ")
+            pathtls = BARNAMY_CONF_DIR
+             
+            config = ConfigParser.RawConfigParser()
+            if not os.path.exists(BARNAMY_CONF_DIR):
+                os.makedirs(BARNAMY_CONF_DIR)
+            config.add_section('DataBase')
+            if db == 's':
+                config.set('DataBase', 'mongodb', 'false')
+                config.set('DataBase', 'sqlite', 'true')
+                config.set('DataBase', 'mariadb', 'false')
+                config.set('DataBase', 'postgresql', 'false')
+            elif db == 'm':
+                config.set('DataBase', 'mongodb', 'true')
+                config.set('DataBase', 'sqlite', 'false')
+                config.set('DataBase', 'mariadb', 'false')
+                config.set('DataBase', 'postgresql', 'false')
+            elif db == 'r':
+                config.set('DataBase', 'mongodb', 'false')
+                config.set('DataBase', 'sqlite', 'false')
+                config.set('DataBase', 'mariadb', 'true')
+                config.set('DataBase', 'postgresql', 'false')
+            elif db == 'p':
+                config.set('DataBase', 'mongodb', 'false')
+                config.set('DataBase', 'sqlite', 'false')
+                config.set('DataBase', 'mariadb', 'false')
+                config.set('DataBase', 'postgresql', 'true')
+
+            config.add_section('MaxUsers')
+            config.set('MaxUsers', 'no', user_no)
+
+            config.add_section('TLS')
+            if tls in YES:
+                path = raw_input('Set tls path: ')
+                if path:
+                    pathtls = path
+
+                config.set('TLS', 'stat', 'true')
+                config.set('TLS', 'path', '%s'%pathtls)
+
+            else: config.set('TLS', 'stat', 'false')
+
+            with open(BARNAMY_CONF_D_FILE, 'wb') as configfile:
+                config.write(configfile)
+
+        if cmd == str(1):
+            print "You are going setup you barnamy local client"
+            url = raw_input("Enter barnamy host server: ")
+            port = input("Enter barnamy port server: ")
+            sound = raw_input("Sound (y)es/(n)o: ")
+            notify = raw_input("Notification (y)es/(n)o: ")
+            log = raw_input("Log (y)es/(n)o: ")
+            tls = raw_input("Tls (y)es/(n)o: ")
+
+            config = ConfigParser.RawConfigParser()
+            if not os.path.exists(BARNAMY_CONF_DIR):
+                os.makedirs(BARNAMY_CONF_DIR)
+            config.add_section('BASE')
+            config.set('BASE', 'url/ip', url)
+            config.set('BASE', 'port', port)
+
+            if sound in YES: config.set('BASE', 'sound', True)
+            elif sound in NO: config.set('BASE', 'sound', False)
+            if notify in YES: config.set('BASE', 'notify', True)
+            elif notify in NO:config.set('BASE', 'notify', False)
+            if log in YES: config.set('BASE', 'log', True)
+            elif log in NO: config.set('BASE', 'log', False)
+            if tls in YES: config.set('BASE', 'tls', True)
+            elif tls in NO: config.set('BASE', 'tls', False)
+
+            with open(BARNAMY_CONF_C_FILE, 'wb') as configfile:
+                config.write(configfile)
+
+        if cmd == str(2):
+            register_user()
+
+        if cmd == str(3):
+            users = input("Enter the number of users that you want to add: ")
+            for user in range(users):
+                register_user()
+
+        if cmd == str(4):
+            user = raw_input("Enter the nick of the user that you want to deactive: ")
+            if db.deactive_user(user): print "%s deactived" %user
+            else: print "Enter a valid nick"
+            print ""
+
+        if cmd == str(5):
+            pass
+        if cmd == str(6):
+            db = Barnamydb()
+            for user in db.get_requests():
+                print "#" * ((len(user.nick)+len(user.email)) + 13)
+                print "# %s\t# %s\t#" %(user.nick, user.email)
+                print "#" * ((len(user.nick)+len(user.email)) + 13)
+                yes_no = raw_input("Do you want to allow this user: ")
+                if yes_no in YES:
+                    db.allow_user(user.nick)
+
+        if cmd == 'barnamy_admin new password':
+            passwd = raw_input("Enter password: ")
+            while(len(passwd) < 3):
+                passwd = raw_input("Check password lenght! enter new password: ")
+            passwd_confirm = raw_input("Re-enter your password: ")
+
+            while passwd != passwd_confirm:
+                passwd = raw_input("Password not match! enter password: ")
+                passwd_confirm = raw_input("Re-enter your password: ")
+            db.update_user('barnamyadmin', passwd)
+
+        if cmd == 'user new password':
+            nick = raw_input("Please a nick: ")
+            if not db.check_dup_user(nick):
+                print "%s does not exist please try again"
+            else:
+                passwd = raw_input("Enter password: ")
+                while(len(passwd) < 3):
+                    passwd = raw_input("Check password lenght! enter new password: ")
+                passwd_confirm = raw_input("Re-enter your password: ")
+
+                while passwd != passwd_confirm:
+                    passwd = raw_input("Password not match! enter password: ")
+                    passwd_confirm = raw_input("Re-enter your password: ")
+                db.update_user(nick, passwd)
+
+        if cmd == "credit":
+            pass
+        if cmd == "copyright":
+            pass
+        if cmd == "license":
+            pass
+        cmd = raw_input(">>> ")
+    except EOFError:
+        print "See you"
+        cmd = 'exit'
+    except KeyboardInterrupt:
+        print "See you"
+        cmd = 'exit'

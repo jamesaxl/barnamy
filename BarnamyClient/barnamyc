@@ -1,0 +1,14 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+from Base.Settings.BarnamySettings import BarnamySettings as BRS
+import Base
+from twisted.internet import reactor, ssl
+IBRS = BRS()
+
+if IBRS.get_settings()['tls']:
+    reactor.connectSSL(IBRS.get_settings()['ip'], IBRS.get_settings()['port'], Base.BarnamyClientBase.BarnamyClientFactory(), ssl.ClientContextFactory())
+else:
+    reactor.connectTCP(IBRS.get_settings()['ip'], IBRS.get_settings()['port'], Base.BarnamyClientBase.BarnamyClientFactory())
+    
+reactor.run()

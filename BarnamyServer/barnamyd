@@ -1,0 +1,27 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+import Engine
+from Settings.BarnamySettings import BarnamySettings as BRS
+from twisted.internet import reactor, ssl
+import twisted
+import structlog
+import sys
+IBRS = BRS()
+
+structlog.configure(
+    processors=[structlog.twisted.EventAdapter()],
+    logger_factory=structlog.twisted.LoggerFactory(),
+)
+twisted.python.log.startLogging(sys.stdout)
+
+BARNAMY_TLS_DIR = IBRS.get_tls()
+
+if BARNAMY_TLS_DIR:
+    reactor.listenSSL(60251, Engine.barnamy_reactor.BarnamyServer(),
+                      ssl.DefaultOpenSSLContextFactory(
+            BARNAMY_TLS_DIR + '/barnamy.key', BARNAMY_TLS_DIR + '/barnamy.crt'))
+else:
+    reactor.listenTCP(60251, Engine.barnamy_reactor.BarnamyServer())
+
+reactor.run()

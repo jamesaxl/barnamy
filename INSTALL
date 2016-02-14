@@ -25,5 +25,6 @@ For Gnu/Linux operating system you should install these modules for pyhton versi
 \5*  service-identity
 \6*  Twisted
 \7*  Gtk3
+\8*  python-gstreamer (version 1)
 
 It contains two files barnamyc the client and bsft (Barnamy Settings First Time) it helps you to configure barnamy when you first time run it or for changing settings without connecting to the server.

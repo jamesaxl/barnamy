@@ -56,7 +56,6 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="use_stock">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -83,7 +82,6 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="use_stock">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -137,7 +135,6 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">label</property>
-                        <property name="xalign">0.56999999284744263</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -208,7 +205,6 @@
           <object class="GtkAspectFrame" id="aspectframe12">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label_xalign">0</property>
             <property name="shadow_type">none</property>
             <child>
               <placeholder/>
@@ -232,7 +228,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -246,7 +241,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -260,7 +254,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -421,7 +414,7 @@
                 <property name="border_width">3</property>
                 <property name="orientation">vertical</property>
                 <property name="position">495</property>
-                <property name="wide_handle">True</property>
+                <property name="position_set">True</property>
                 <child>
                   <object class="GtkScrolledWindow" id="scrolledwindow3">
                     <property name="height_request">400</property>
@@ -844,6 +837,7 @@
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
+        <property name="homogeneous">True</property>
         <child internal-child="action_area">
           <object class="GtkButtonBox" id="dialog-action_area2">
             <property name="can_focus">False</property>
@@ -854,7 +848,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="xalign">0.43999999761581421</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -868,7 +861,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="xalign">0.43999999761581421</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -1085,7 +1077,7 @@ Do you want to use &lt;b&gt;Barnamy pastebin?&lt;/b&gt;</property>
           </object>
           <packing>
             <property name="expand">True</property>
-            <property name="fill">False</property>
+            <property name="fill">True</property>
             <property name="position">1</property>
           </packing>
         </child>
@@ -1167,11 +1159,10 @@ Do you want to use &lt;b&gt;Barnamy pastebin?&lt;/b&gt;</property>
                 </child>
                 <child>
                   <object class="GtkButton" id="bt_login">
-                    <property name="label">gtk-connect</property>
+                    <property name="label">LOGIN</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="use_stock">True</property>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -1192,7 +1183,7 @@ Do you want to use &lt;b&gt;Barnamy pastebin?&lt;/b&gt;</property>
           </object>
           <packing>
             <property name="expand">True</property>
-            <property name="fill">False</property>
+            <property name="fill">True</property>
             <property name="position">2</property>
           </packing>
         </child>
@@ -1275,7 +1266,6 @@ Fatima umarova</property>
           <object class="GtkAspectFrame" id="aspectframe9">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label_xalign">0</property>
             <property name="shadow_type">none</property>
             <child>
               <placeholder/>
@@ -1373,10 +1363,6 @@ Fatima umarova</property>
               <object class="GtkEntry" id="entry_cf_passwd">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="visibility">False</property>
-                <property name="invisible_char">●</property>
-                <property name="placeholder_text">Confirm password</property>
-                <property name="input_purpose">password</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -1398,11 +1384,10 @@ Fatima umarova</property>
             <property name="homogeneous">True</property>
             <child>
               <object class="GtkButton" id="bt_register">
-                <property name="label">gtk-save</property>
+                <property name="label">Send register request</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -1421,7 +1406,6 @@ Fatima umarova</property>
           <object class="GtkAspectFrame" id="aspectframe10">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label_xalign">0</property>
             <property name="shadow_type">none</property>
             <child>
               <placeholder/>
@@ -1513,8 +1497,6 @@ Fatima umarova</property>
           <object class="GtkNotebook" id="group_users">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="margin_left">5</property>
-            <property name="margin_right">5</property>
             <property name="margin_top">5</property>
             <property name="margin_bottom">5</property>
             <property name="tab_pos">left</property>

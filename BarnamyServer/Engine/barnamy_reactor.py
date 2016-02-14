@@ -67,6 +67,10 @@ class BarnamyProtocol(LineReceiver):
                 self.handle_ADMINMSG(data, log)
             elif self.schema.access_folder_valid_f(data):
                 self.handle_FOLDER_SHARE_VALID(data, log)
+            elif self.schema.ignore_user_f(data):
+                self.handle_IGNORE_USER(data, log)
+            elif self.schema.unignore_user_f(data):
+                self.handle_UNIGNORE_USER(data, log)
             else:
                 self.sendLine(self.packer.pack(self.schema.error))
 
@@ -108,6 +112,7 @@ class BarnamyProtocol(LineReceiver):
         user = Model.barnamydb.Barnamydb()
         if user.check_user(data['nick'], data['passwd']):
             self.name = data["nick"]
+            self.factory.ignore_users[self.name] = []
             self.factory.users[data["nick"]] = self
             message = "%s has joined the channel" % (data["nick"],)
 
@@ -124,6 +129,7 @@ class BarnamyProtocol(LineReceiver):
         if data["token_id"] != str(self.token_id):
             self.sendLine(self.packer.pack("Where did you get this Token_id :)."))
             return
+
         log.msg('PUBLIC MSG')
         bernamylog = Model.barnamydb.Barnamydb()
         bernamylog.save_log(data, data['nick'], 'PUBLIC_MSG')
@@ -138,11 +144,15 @@ class BarnamyProtocol(LineReceiver):
         bernamylog = Model.barnamydb.Barnamydb()
         bernamylog.save_log(data, data['from_'], 'PRIVATE_MSG')
         message = {"type":"private", "from_" : data['from_'], "to_":data['to_'], "msg":data['msg']}
-        self.factory.users[data["to_"]].sendLine(self.packer.pack(message))
+        if not data['to_'] in self.factory.ignore_users[self.name]:
+            if not self.name in self.factory.ignore_users[data['to_']]:
+                self.factory.users[data["to_"]].sendLine(self.packer.pack(message))
 
     def handle_FOLDER_SHARE(self, data, log):
         if data["token_id"] != str(self.token_id):
             self.sendLine(self.packer.pack("Where did you get this Token_id :)."))
+            return
+        if data['from_'] in self.factory.ignore_users[self.name]:
             return
         log.msg('Access Folder')
         bernamylog = Model.barnamydb.Barnamydb()
@@ -183,10 +193,31 @@ class BarnamyProtocol(LineReceiver):
             barnamy_admin_msg = Model.barnamydb.Barnamydb()
             barnamy_admin_msg.save_user_msg_to_admin(data['nick'], data['msg'])
 
+    def handle_IGNORE_USER(self, data, log):
+        if data['nick'] == self.name:
+            return
+
+        self.factory.ignore_users[self.name].append(data['nick'])
+        print self.factory.ignore_users[self.name]
+        log.msg('Ignore user')
+        bernamylog = Model.barnamydb.Barnamydb()
+        bernamylog.save_log(data, data['nick'], 'IGNORE')
+
+    def handle_UNIGNORE_USER(self, data, log):
+        if data['nick'] == self.name:
+            return
+
+        self.factory.ignore_users[self.name].remove(data['nick'])
+        log.msg('Unignore user')
+        bernamylog = Model.barnamydb.Barnamydb()
+        bernamylog.save_log(data, data['nick'], 'UNIGNORE')
+
     def broadcastMessage(self, message):
         for name, protocol in self.factory.users.iteritems():
-            if protocol != self:
-                protocol.sendLine(message)
+            if not name in self.factory.ignore_users[self.name]:
+                if not self.name in self.factory.ignore_users[name]:
+                    if protocol != self:
+                        protocol.sendLine(message)
     
     def logout(self, data, log):
         log.msg('LOGOUT')
@@ -209,6 +240,7 @@ class BarnamyProtocol(LineReceiver):
 class BarnamyServer(Factory):
     def __init__(self):
         self.users = {}
+        self.ignore_users = {}
 
     def buildProtocol(self, addr):
         return BarnamyProtocol(self)

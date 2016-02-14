@@ -13,10 +13,10 @@ import msgpack
 import GUI
 import Audio
 import Notify
-import os, signal
+import os
+import signal
 import getpass
 from os.path import expanduser
-import os
 import random
 import string
 
@@ -35,7 +35,7 @@ class BarnamyClient(LineReceiver):
         self.nick = None
         self._pid = None
         self.barnamy_cmd = {'/admin' : 'for sending message to Admin', '/ignore' : 'to ignore user',
-        '/run_srv':'Run barnamy server', '/stop_srv':'Stop barnamy server'}
+        '/unignore' : 'to unignore user', '/run_srv':'Run barnamy server', '/stop_srv':'Stop barnamy server'}
 
         self.barnamy_settings_actions = {'save_settings' : self.save_settings, 'get_settings' : self.get_settings}
 
@@ -46,7 +46,7 @@ class BarnamyClient(LineReceiver):
         self.barnamy_actions = {'send_pub_msg' : self.send_pub_msg, 'send_prv_msg' : self.send_prv_msg, 'do_login': self.do_login,
          'do_logout' : self.do_logout, 'ask_for_folder_access' : self.ask_for_folder_access, 'regiser_new_user' : self.regiser_new_user,
          '_notify' : self._notify, '_log' : self._log, 'start_web_server' : self.start_web_server, 'stop_web_server':self.stop_web_server
-         ,'accept_share' : self.accept_share}
+         ,'accept_share' : self.accept_share, 'ignore_user': self.ignore_user, 'unignore_user': self.unignore_user}
 
         self.barnamy_status = {'online' : self.go_online, 'away' : self.go_away}
         self.BarnamyPlayer = Audio.BarnamyAudio.BarnamyAudio()
@@ -176,6 +176,7 @@ class BarnamyClient(LineReceiver):
         except subprocess.CalledProcessError:
             self._pid = subprocess.Popen(['twistd', '-n', 'web', '--resource-script', 'Base/MiniShareServer/EngineShareServer.rpy']) #start
             return True
+
     def stop_web_server(self):
         for line in os.popen("ps ax | grep " + 'twistd' + " | grep -v grep"):
             fields = line.split()
@@ -184,14 +185,32 @@ class BarnamyClient(LineReceiver):
         self._pid = None
 
     def accept_share(self, nick):
-        BARNAMY_HOME_NICK = "%s/%s" %(BARNAMY_HOME, nick)
-        if not os.path.exists(BARNAMY_HOME_NICK):
-            os.makedirs(BARNAMY_HOME_NICK)
-        passwd_f = open(BARNAMY_HTTP_PASSWD_FILE, 'a')
-        passwd = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))
-        passwd_f.write("%s:%s\n"%(nick, passwd))
-        passwd_f.close()
+        passwd = None
+        passwd_f = open(BARNAMY_HTTP_PASSWD_FILE, 'r')
+        exist = False
+        for passwd_l in passwd_f:
+            if passwd_l.split(':')[0] == nick:
+                exist = True
+                passwd = passwd_l.split(':')[1]
+                break
+
+        if not exist:
+            BARNAMY_HOME_NICK = "%s/%s" %(BARNAMY_HOME, nick)
+            if not os.path.exists(BARNAMY_HOME_NICK):
+                os.makedirs(BARNAMY_HOME_NICK)
+            passwd_f = open(BARNAMY_HTTP_PASSWD_FILE, 'a')
+            passwd = ''.join(random.choice(string.ascii_uppercase + string.digits + string.lowercase) for _ in range(7))
+            passwd_f.write("%s:%s\n"%(nick, passwd))
+            passwd_f.close()
         data = {'type':'access_folder_valid', 'from_':self.nick, 'to_':nick, 'passwd':passwd, 'token_id':self.token_id}
+        self.sendLine(self.packer.pack(data))
+
+    def ignore_user(self, nick):
+        data = {'type':'ignore', 'nick':nick, 'token_id':self.token_id}
+        self.sendLine(self.packer.pack(data))
+
+    def unignore_user(self, nick):
+        data = {'type':'unignore', 'nick':nick, 'token_id':self.token_id}
         self.sendLine(self.packer.pack(data))
 
 class BarnamyClientFactory(ClientFactory):

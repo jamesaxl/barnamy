@@ -7,7 +7,7 @@ from Base.Settings.BarnamySettings import BarnamySettings as BRS
 
 class GuiSettingFirstTime(object):
     def __init__(self):
-    	self.barnamy_widget = {}
+        self.barnamy_widget = {}
         self.settings = BRS()
         self._builder = Gtk.Builder()
         self._builder.add_from_file("Theme/GuiGtk/barnamy_ui.glade")

@@ -181,16 +181,24 @@ while cmd != "exit":
             print ""
 
         if cmd == str(5):
-            pass
+            db = Barnamydb()
+            requests = db.get_user_msg_admin()
+            if requests:
+                for request in requests:
+                    print "%s %s" %(request.nick, request.msg)
+
         if cmd == str(6):
             db = Barnamydb()
             for user in db.get_requests():
-                print "#" * ((len(user.nick)+len(user.email)) + 13)
-                print "# %s\t# %s\t#" %(user.nick, user.email)
-                print "#" * ((len(user.nick)+len(user.email)) + 13)
-                yes_no = raw_input("Do you want to allow this user: ")
-                if yes_no in YES:
-                    db.allow_user(user.nick)
+                yes_no = None
+                while not yes_no in YES or not yes_no in NO:
+                    yes_no = raw_input("{%s : %s} send a register request, do you want to allow this user yes/no: "%(user.nick, user.email))
+                    if yes_no in YES:
+                        db.allow_user(user.nick)
+                        break
+                    elif yes_no in NO:
+                        #send email
+                        break
 
         if cmd == 'barnamy_admin new password':
             passwd = raw_input("Enter password: ")

@@ -32,7 +32,6 @@ class BarnamyClientGui(object):
         self.selected_user = None
         self.selected_prv_chat = None
         self.position = 0
-        self.from_user = None
         self.current_user = None
         self._builder = Gtk.Builder()
         self._builder.add_from_file("Theme/GuiGtk/barnamy_ui.glade")
@@ -501,7 +500,7 @@ class BarnamyClientGui(object):
             self.barnamy_widget_prv_chat[data['from_']]["chat_view"].set_editable(False)
             self.barnamy_widget_prv_chat[data['from_']]["chat_view"].set_cursor_visible(False)
             self.barnamy_widget_prv_chat[data['from_']]["chat_view"].set_wrap_mode(Gtk.WrapMode.WORD)
-            fontdesc = Pango.FontDescription("monospace 18")
+            fontdesc = Pango.FontDescription("monospace 10.5")
             self.barnamy_widget_prv_chat[data['from_']]["chat_view"].modify_font(fontdesc)
             
             self.barnamy_widget_prv_chat[data['from_']]["enter_view"] = self.ObjectGui("TextView")
@@ -523,8 +522,8 @@ class BarnamyClientGui(object):
         end_iter = chat_buffer.get_end_iter()
         chat_buffer.insert(end_iter, "[%s] "%(strftime("%H:%M:%S", gmtime())))
         end_iter = chat_buffer.get_end_iter()
-        self.from_user = chat_buffer.create_tag(None, foreground='red')
-        chat_buffer.insert_with_tags(end_iter, "<%s> "%data['from_'], self.from_user)
+        from_user = chat_buffer.create_tag(None, foreground='red')
+        chat_buffer.insert_with_tags(end_iter, "<%s> "%data['from_'], from_user)
 
         _log = "barnamy_prv_%s_%s"%(self.nick, data['from_']), "[%s]<%s>%s\n" %(strftime("%H:%M:%S", gmtime()), data['from_'], data['msg'])
         self.BarnamyBase.barnamy_actions['_log'](_log)
@@ -552,65 +551,38 @@ class BarnamyClientGui(object):
 
         self.BarnamyBase.barnamy_actions['_notify']( data['from_'], data['msg'])
 
+    def barnamy_dialog_warning(self, msg):
+        dialog = Gtk.MessageDialog(self.barnamy_widget['register_window'], 0, Gtk.MessageType.WARNING,
+            Gtk.ButtonsType.OK, "Barnamy Warning")
+        dialog.format_secondary_text(msg)
+        dialog.run()
+        dialog.destroy()
+        return
+
     def regiser_new_user(self, widget):
         if not self.barnamy_widget["entry_nick"].get_text():
-            dialog = Gtk.MessageDialog(self.barnamy_widget['register_window'], 0, Gtk.MessageType.WARNING,
-            Gtk.ButtonsType.OK, "Barnamy Warning")
-            dialog.format_secondary_text("Nick required")
-            dialog.run()
-            dialog.destroy()
-            return
+            self.barnamy_dialog_warning("Nick required")
 
         if not self.barnamy_widget["entry_email"].get_text():
-            dialog = Gtk.MessageDialog(self.barnamy_widget['register_window'], 0, Gtk.MessageType.WARNING,
-            Gtk.ButtonsType.OK, "Barnamy Warning")
-            dialog.format_secondary_text("Email required")
-            dialog.run()
-            dialog.destroy()
-            return
-        
+            self.barnamy_dialog_warning("Email required")
+
+
         if re.match("^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$", self.barnamy_widget["entry_email"].get_text()) == None:
-            dialog = Gtk.MessageDialog(self.barnamy_widget['register_window'], 0, Gtk.MessageType.WARNING,
-            Gtk.ButtonsType.OK, "Barnamy Warning")
-            dialog.format_secondary_text("Email not valid")
-            dialog.run()
-            dialog.destroy()
-            return
-        
+            self.barnamy_dialog_warning("Email not valid")
+
         if not self.barnamy_widget["entry_passwd"].get_text():
-            dialog = Gtk.MessageDialog(self.barnamy_widget['register_window'], 0, Gtk.MessageType.WARNING,
-            Gtk.ButtonsType.OK, "Barnamy Warning")
-            dialog.format_secondary_text("Password required")
-            dialog.run()
-            dialog.destroy()
-            return
+            self.barnamy_dialog_warning("Password required")
+
         if not self.barnamy_widget["entry_cf_passwd"].get_text():
-            dialog = Gtk.MessageDialog(self.barnamy_widget['register_window'], 0, Gtk.MessageType.WARNING,
-            Gtk.ButtonsType.OK, "Barnamy Warning")
-            dialog.format_secondary_text("Password cofirmaion required")
-            dialog.run()
-            dialog.destroy()
-            return
+            self.barnamy_dialog_warning("Password comfirmation required")
+
         if self.barnamy_widget["entry_passwd"].get_text() != self.barnamy_widget["entry_cf_passwd"].get_text():
-            dialog = Gtk.MessageDialog(self.barnamy_widget['register_window'], 0, Gtk.MessageType.WARNING,
-            Gtk.ButtonsType.OK, "Barnamy Warning")
-            dialog.format_secondary_text("Password and Re-password should be the same")
-            dialog.run()
-            dialog.destroy()
-            return
+            self.barnamy_dialog_warning("Password and Re-password should be the same")
 
         data = {"type":"register", "nick":self.barnamy_widget["entry_nick"].get_text(), "email":self.barnamy_widget["entry_email"].get_text(), 
                 "passwd":self.barnamy_widget["entry_passwd"].get_text()}
+
         self.BarnamyBase.barnamy_actions['regiser_new_user'](data)
-
-    def send_admin_request(self):
-        pass
-
-    def ignore_user(self, nick):
-        pass
-
-    def print_help():
-        pass
 
     def send_public_msg(self, widget, event):
 
@@ -648,8 +620,15 @@ class BarnamyClientGui(object):
                 return
 
             if msg.split(' ')[0] == "/ignore" and msg.split(' ')[1]:
-                pass
+                self.BarnamyBase.barnamy_actions['ignore_user'](msg.split(' ')[1])
+                text_buffer.set_text("")
                 return
+
+            if msg.split(' ')[0] == "/unignore" and msg.split(' ')[1]:
+                self.BarnamyBase.barnamy_actions['unignore_user'](msg.split(' ')[1])
+                text_buffer.set_text("")
+                return
+
             if msg.split(' ')[0] == "/admin" and msg.split(' ')[1]:
                 chat_buffer.insert_with_tags(end_chat_sel, "---Msg sent to admin---\n", self.join_left_cmd_tag)
                 text_buffer.set_text("")
@@ -658,6 +637,7 @@ class BarnamyClientGui(object):
                 return
 
             msg_lines = msg.split("\n")
+
             if len(msg_lines) > 7:
                 self.pastebin_barnamy(msg, widget)
             else:
@@ -981,9 +961,3 @@ class BarnamyClientGui(object):
         if tags:
             tags = None
 
-#class Fun(object):  #Sbte
- #   def __init__(self, fun):
- #       self.fun = fun
-
- #   def __call__(self, text):
- #       self.fun(text)

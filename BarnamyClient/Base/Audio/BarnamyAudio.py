@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import sys, os, pygtk
+import sys, os
 import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import GObject

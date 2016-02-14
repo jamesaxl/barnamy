@@ -236,5 +236,21 @@ class Barnamydb(object):
             request.msg = msg
             request.save()
         elif DB_ENGINE['type'] == 'sqlite' or DB_ENGINE['type'] == 'mariadb' or DB_ENGINE['type'] == 'postgresql':
-            request = DB_ENGINE['adminmsg'](nick = nick, msg = msg)
-            request.commit()
+            request = DB_ENGINE['admin_msg'](nick = nick, msg = msg)
+            session.add(request)
+            session.commit()
+
+    def get_user_msg_admin(self):
+        if DB_ENGINE['type'] == 'mongodb':
+            try:
+                request = DB_ENGINE['admin_msg']()
+                return request
+            except Exception:
+                return False
+
+        elif DB_ENGINE['type'] == 'sqlite' or DB_ENGINE['type'] == 'mariadb' or DB_ENGINE['type'] == 'postgresql':
+            try:            
+                request = session.query(DB_ENGINE['admin_msg']).all()
+                return request
+            except Exception:
+                return False

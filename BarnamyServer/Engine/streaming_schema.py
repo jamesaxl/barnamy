@@ -37,6 +37,13 @@ class BarnamyServerSchema(object):
         self.access_folder_valid = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'access_folder_valid'),
                                        'from_': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
                                        'to_':And(str), 'passwd':And(str), 'token_id':And(str)})
+        self.ignore_user = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'ignore'),
+                                       'nick': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
+                                       'token_id':And(str)})
+
+        self.unignore_user = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'unignore'),
+                                       'nick': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
+                                       'token_id':And(str)})
 
         self.error = {"login_syntax" : '{"type":"login", "nick":"4 <= len(str) <= 10", "passwd":"str"}',
                       "register_syntax" : '{"type":"register", "nick":"4 <= len(str) <= 10", "passwd":"str", "email":"str"}',
@@ -46,6 +53,20 @@ class BarnamyServerSchema(object):
     def login_schema_f(self, data):
         try:
             data = self.login_schema.validate(data)
+            return True
+        except Exception:
+            return False
+
+    def ignore_user_f(self, data):
+        try:
+            data = self.ignore_user.validate(data)
+            return True
+        except Exception:
+            return False
+
+    def unignore_user_f(self, data):
+        try:
+            data = self.unignore_user.validate(data)
             return True
         except Exception:
             return False

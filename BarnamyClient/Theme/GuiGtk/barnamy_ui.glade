@@ -645,14 +645,10 @@
                     <property name="orientation">vertical</property>
                     <property name="spacing">5</property>
                     <child>
-                      <object class="GtkSpinButton" id="spinbutton2">
+                     <object class="GtkEntry" id="entry_wport">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="max_length">5</property>
-                        <property name="invisible_char">●</property>
-                        <property name="text" translatable="yes">8080</property>
-                        <property name="placeholder_text">Port</property>
-                        <property name="orientation">vertical</property>
+                        <property name="placeholder_text" translatable="yes">Port</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>

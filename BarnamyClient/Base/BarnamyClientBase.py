@@ -174,15 +174,13 @@ class BarnamyClient(LineReceiver):
             self._pid = subprocess.check_output(['pgrep', 'twistd', '-u', USER])
             return False
         except subprocess.CalledProcessError:
-            self._pid = subprocess.Popen(['twistd', '-n', 'web', '--resource-script', 'Base/MiniShareServer/EngineShareServer.rpy']) #start
+            self._pid = subprocess.Popen(['twistd', '-n', 'web', '--resource-script', 'Base/MiniShareServer/EngineShareServer.rpy', '--port', '%s'%self.get_settings()['wport']]) #start
             return True
 
     def stop_web_server(self):
-        for line in os.popen("ps ax | grep " + 'twistd' + " | grep -v grep"):
-            fields = line.split()
-            pid = fields[0]
-            os.kill(int(pid), signal.SIGKILL)
-        self._pid = None
+        if self._pid:
+            os.kill(self._pid.pid, signal.SIGKILL)
+            self._pid = None
 
     def accept_share(self, nick):
         passwd = None

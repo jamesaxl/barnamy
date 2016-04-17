@@ -105,6 +105,7 @@ class BarnamyClientGui(object):
         self.barnamy_widget["bt_close_setting"] = self._builder.get_object("bt_close_setting")
         self.barnamy_widget["entry_ip"] = self._builder.get_object("entry_ip")
         self.barnamy_widget["entry_port"] = self._builder.get_object("entry_port")
+        self.barnamy_widget["entry_wport"] = self._builder.get_object("entry_wport")
         self.barnamy_widget["switch_sound"] = self._builder.get_object("switch_sound")
         self.barnamy_widget["bt_barnamy_web_server"] = self._builder.get_object("bt_barnamy_web_server")
                 
@@ -392,7 +393,7 @@ class BarnamyClientGui(object):
             chat_buffer.insert_with_tags(end_iter, "[%s] --- %s ---\n"%(strftime("%H:%M:%S", gmtime()), data["user_join_left"]), 
                                          join_left_tag_prv)
 
-    def recv_access_folder(self,data):
+    def recv_access_folder(self, data):
         if not data['from_'] in self.users_access:
             self.users_access.append(data['from_'])
             self.barnamy_widget["l_count"].set_text("%d/%d"%(self.position + 1, len(self.users_access)))
@@ -401,7 +402,7 @@ class BarnamyClientGui(object):
 
             self.BarnamyBase.barnamy_sound_setting['access_folder_sound']()
 
-    def recv_access_folder_valid(self,data):
+    def recv_access_folder_valid(self, data):
         text_buffer = self.barnamy_widget["barnamy_text_chat"].get_buffer()
         end_iter = text_buffer.get_end_iter()
         text_buffer.insert_with_tags(end_iter, "---%s accepted you, the Password is %s and you should not lose it---\n"%(data['from_'], data['passwd']), 
@@ -612,11 +613,13 @@ class BarnamyClientGui(object):
             if msg == '/run_srv':
                 self.start_web_server()
                 chat_buffer.insert_with_tags(end_chat_sel, "---Web server started---\n", self.join_left_cmd_tag)
+                text_buffer.set_text("")                
                 return
 
             if msg == '/stop_srv':
                 self.stop_web_server()
                 chat_buffer.insert_with_tags(end_chat_sel, "---Web server stoped---\n", self.join_left_cmd_tag)
+                text_buffer.set_text("")                
                 return
 
             if msg.split(' ')[0] == "/ignore" and msg.split(' ')[1]:
@@ -882,6 +885,7 @@ class BarnamyClientGui(object):
         settings = self.BarnamyBase.barnamy_settings_actions['get_settings']()
         self.barnamy_widget['entry_ip'].set_text(settings['ip'])
         self.barnamy_widget['entry_port'].set_text(str(settings['port']))
+        self.barnamy_widget['entry_wport'].set_text(str(settings['wport']))
         self.barnamy_widget['switch_sound'].set_active(settings['sound'])
         self.barnamy_widget['switch_notify'].set_active(settings['notify'])
         self.barnamy_widget['switch_log'].set_active(settings['log'])
@@ -894,12 +898,11 @@ class BarnamyClientGui(object):
         return True
 
     def barnamy_save_setting(self, widget):
-        settings = {"ip":self.barnamy_widget["entry_ip"].get_text(), "port":self.barnamy_widget["entry_port"].get_text(), 
+        settings = {"ip":self.barnamy_widget["entry_ip"].get_text(), "port":self.barnamy_widget["entry_port"].get_text(), "wport":self.barnamy_widget["entry_wport"].get_text(),
                     "sound":self.barnamy_widget["switch_sound"].get_active(), "notify":self.barnamy_widget["switch_notify"].get_active(),
                     "log":self.barnamy_widget["switch_log"].get_active(), "tls":self.barnamy_widget["switch_tls"].get_active()}
 
         self.BarnamyBase.barnamy_settings_actions['save_settings'](settings)
-        self.barnamy_settings_close()
         return True
 
     def hide_about_barnamy(self, widget = 0, event = 0):

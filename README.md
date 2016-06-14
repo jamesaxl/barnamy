@@ -6,6 +6,7 @@ barnamy for the love of community
 SERVER SIDE
 ===========
 It is better to create a virtual env for python2 and use pip to install this requires modules
+
 1.  bcrypt
 2.  mongoengine (if you want mongodb)
 3.  msgpack-python
@@ -23,6 +24,7 @@ It contains two executed files barnamyd the server and barnamy_samrt, it will he
 
 CLIENT SIDE
 ===========
+
 For Gnu/Linux operating system you should install these modules for pyhton version 2, do not install by hand if you do not know how your system works, It better to install them from your distribution package manager.
 1.  bcrypt
 2.  msgpack-python

@@ -26,6 +26,7 @@ CLIENT SIDE
 ===========
 
 For Gnu/Linux operating system you should install these modules for pyhton version 2, do not install by hand if you do not know how your system works, It better to install them from your distribution package manager.
+
 1.  bcrypt
 2.  msgpack-python
 3.  pyOpenSSL

@@ -16,6 +16,7 @@ class GuiSettingFirstTime(object):
         self.barnamy_widget["bt_close_setting"] = self._builder.get_object("bt_close_setting")
         self.barnamy_widget['entry_ip']  = self._builder.get_object("entry_ip")
         self.barnamy_widget['entry_port'] = self._builder.get_object("entry_port")
+        self.barnamy_widget['entry_wport'] = self._builder.get_object("entry_wport")
         self.barnamy_widget['switch_sound'] = self._builder.get_object("switch_sound")
         self.barnamy_widget['switch_notify'] = self._builder.get_object("switch_notify")
         self.barnamy_widget['switch_log'] = self._builder.get_object("switch_log")
@@ -41,7 +42,7 @@ class GuiSettingFirstTime(object):
         
 
     def barnamy_save_setting(self, widget):
-        settings = {"ip":self.barnamy_widget["entry_ip"].get_text(), "port":self.barnamy_widget["entry_port"].get_text(), 
+        settings = {"ip":self.barnamy_widget["entry_ip"].get_text(), "port":self.barnamy_widget["entry_port"].get_text(), "wport":self.barnamy_widget["entry_wport"].get_text(),
                     "sound":self.barnamy_widget["switch_sound"].get_active(), "notify":self.barnamy_widget["switch_notify"].get_active(),
                     "log":self.barnamy_widget["switch_log"].get_active(), "tls":self.barnamy_widget["switch_tls"].get_active()}
 

@@ -142,6 +142,7 @@ while cmd != "exit":
             print "You are going setup you barnamy local client"
             url = raw_input("Enter barnamy host server: ")
             port = input("Enter barnamy port server: ")
+            wport = input("Enter barnamy port for web server: ")
             sound = raw_input("Sound (y)es/(n)o: ")
             notify = raw_input("Notification (y)es/(n)o: ")
             log = raw_input("Log (y)es/(n)o: ")
@@ -153,6 +154,7 @@ while cmd != "exit":
             config.add_section('BASE')
             config.set('BASE', 'url/ip', url)
             config.set('BASE', 'port', port)
+            config.set('BASE', 'wport', wport)
 
             if sound in YES: config.set('BASE', 'sound', True)
             elif sound in NO: config.set('BASE', 'sound', False)

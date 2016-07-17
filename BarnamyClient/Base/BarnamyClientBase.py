@@ -22,6 +22,7 @@ import string
 
 BARNAMY_HOME = expanduser("~/BarnamyHome")
 BARNAMY_HTTP_PASSWD_FILE = expanduser("~/.barnamy/httpd.password")
+BARNAMY_MINI_WEB_SRV_PID = "/tmp/barnamyminisrv.pid"
 USER = getpass.getuser()
 
 class BarnamyClient(LineReceiver):
@@ -34,8 +35,9 @@ class BarnamyClient(LineReceiver):
         self.token_id = None
         self.nick = None
         self._pid = None
-        self.barnamy_cmd = {'/admin' : 'for sending message to Admin', '/ignore' : 'to ignore user',
-        '/unignore' : 'to unignore user', '/run_srv':'Run barnamy server', '/stop_srv':'Stop barnamy server'}
+        self.barnamy_cmd = {'/admin' : 'for sending message to Admin e.g /admin <msg>', '/ignore' : 'to ignore user e.g /ignore <nick>',
+        '/unignore' : 'to unignore user e.g /unignore <nick>', '/run_srv':'Run barnamy server', 
+        '/stop_srv':'Stop barnamy server', '/allow' : 'to allow user join private folder e.g /allow <nick>', '/away' : 'Become away', '/online' : 'Become online'}
 
         self.barnamy_settings_actions = {'save_settings' : self.save_settings, 'get_settings' : self.get_settings}
 
@@ -51,7 +53,7 @@ class BarnamyClient(LineReceiver):
         self.barnamy_status = {'online' : self.go_online, 'away' : self.go_away}
         self.BarnamyPlayer = Audio.BarnamyAudio.BarnamyAudio()
         self.BarnamyNotify = Notify.BarnamyNotify.BarnamyNotify()
-        self.app = GUI.BarnamyClientGui.BarnamyClientGui(self)
+        self.app = GUI.BarnamyLogin.BarnamyLogin(self)
         self.app.RunBarnamyLogin()
 
     def regiser_new_user(self, data):
@@ -63,6 +65,8 @@ class BarnamyClient(LineReceiver):
     def do_logout(self, data):
         self.sendLine(self.packer.pack(data))
         self.barnamy_sound_setting['logout_sound']()
+        self.nick = None
+        self.token_id = None
 
     def ask_for_folder_access(self, data):
         self.sendLine(self.packer.pack(data))
@@ -128,24 +132,25 @@ class BarnamyClient(LineReceiver):
     def lineReceived(self, data):
         self.unpacker.feed(data)
         data = self.unpacker.unpack()
-        if self.schema.status_schema_f(data): self.app.recv_status_before_connexion(data)
+        if self.schema.status_schema_f(data): self.app.recv_status_before_login(data)
 
-        if self.schema.status_schema_user_f(data): self.app.recv_status_user(data)
+        if self.schema.status_schema_user_f(data): self.app.barnamy_chat_window_ins.recv_status_user(data)
 
         if self.schema.login_nok_schema_f(data): self.app.recv_login_nok(data)
 
         if self.schema.error_schema_f(data): self.app.recv_error_schema(data)
 
         if self.schema.user_join_left_schema_f(data):
-            self.app.recv_user_join_left(data)
+            self.app.barnamy_chat_window_ins.recv_user_join_left(data)
+            self.app.barnamy_chat_window_ins.barnamy_user_list.recv_user_join_left_prv(data)
             self.barnamy_actions['_notify']("Barnamy", data['user_join_left'])
 
         if self.schema.access_folder_schema_f(data):
-            self.app.recv_access_folder(data)
+            self.app.barnamy_chat_window_ins.recv_access_folder(data)
             self.barnamy_sound_setting['access_folder_sound']()
 
         if self.schema.access_folder_valid_schema_f(data):
-            self.app.recv_access_folder_valid(data)
+            self.app.barnamy_chat_window_ins.recv_access_folder_valid(data)
 
         if self.schema.login_schema_f(data):
             self.token_id = data["token_id"]
@@ -155,10 +160,10 @@ class BarnamyClient(LineReceiver):
 
         if self.schema.register_schema_f(data): self.app.recv_register(data)
 
-        if self.schema.public_message_f(data): self.app.recv_public_msg(data)
+        if self.schema.public_message_f(data): self.app.barnamy_chat_window_ins.recv_public_msg(data)
 
         if self.schema.private_message_f(data):
-            self.app.recv_prv_msg(data)
+            self.app.barnamy_chat_window_ins.barnamy_user_list.recv_prv_msg(data)
             self.barnamy_sound_setting['received_prv_msg_sound']()
             self.barnamy_actions['_notify']( data['from_'], data['msg'])
 
@@ -170,20 +175,29 @@ class BarnamyClient(LineReceiver):
         return url
 
     def start_web_server(self):
-        try:
-            self._pid = subprocess.check_output(['pgrep', 'twistd', '-u', USER])
-            return False
-        except subprocess.CalledProcessError:
-            self._pid = subprocess.Popen(['twistd', '-n', 'web', '--resource-script', 'Base/MiniShareServer/EngineShareServer.rpy', '--port', '%s'%self.get_settings()['wport']]) #start
+        if os.path.exists(BARNAMY_MINI_WEB_SRV_PID): 
             return True
+        else:
+            if self.get_settings()['web_tls']:
+                self._pid = subprocess.Popen(['twistd', '--pidfile=/tmp/barnamyminisrv.pid', '-n', 'web', '--https=%s'%self.get_settings()['web_tls_port'], 
+                '--certificate=%s/barnamy.crt'%self.get_settings()['web_tls_path'], 
+                '--privkey=%s/barnamy.key'%self.get_settings()['web_tls_path'],'--resource-script',
+                'Base/MiniShareServer/EngineShareServer.rpy', '--port', '%s'%self.get_settings()['wport'] ]) #start
+            else :
+                self._pid = subprocess.Popen(['twistd', '--pidfile=/tmp/barnamyminisrv.pid', '-n', 'web', '--resource-script', 
+                'Base/MiniShareServer/EngineShareServer.rpy', '--port', '%s'%self.get_settings()['wport'] ]) #start
+            return False
 
     def stop_web_server(self):
         if self._pid:
-            os.kill(self._pid.pid, signal.SIGKILL)
+            os.kill(self._pid.pid, signal.SIGTERM)
             self._pid = None
 
     def accept_share(self, nick):
         passwd = None
+        if not os.path.exists(BARNAMY_HTTP_PASSWD_FILE):
+            passwd_f = open(BARNAMY_HTTP_PASSWD_FILE, 'w+')
+
         passwd_f = open(BARNAMY_HTTP_PASSWD_FILE, 'r')
         exist = False
         for passwd_l in passwd_f:

@@ -15,6 +15,9 @@ BARNAMY_HOME = expanduser("~/BarnamyHome")
 if not os.path.exists(BARNAMY_HOME):
 	os.makedirs(BARNAMY_HOME)
 
+if not os.path.exists(BARNAMY_HTTP_PASSWD_FILE):
+	file = open(BARNAMY_HTTP_PASSWD_FILE, 'w+')
+
 class PublicHTMLRealm(object):
     implements(IRealm)
 

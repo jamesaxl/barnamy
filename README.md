@@ -21,6 +21,7 @@ It is better to create a virtual env for python2 and use pip to install this req
 12. Twisted
 
 It contains two executed files barnamyd the server and barnamy_samrt, it will help you to manage your server.
+For using pypy+sqlite3 you should install pypy-sqlite3 from your package manager if you want to use sqlite3.
 
 CLIENT SIDE
 ===========

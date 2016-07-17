@@ -17,6 +17,9 @@ class BarnamySettings(object):
             self.config.set('BASE', 'URL/IP', '127.0.0.1')
             self.config.set('BASE', 'Port', '60251')
             self.config.set('BASE', 'WPort', '8080')
+            self.config.set('BASE', 'Web_tls', 'false')
+            self.config.set('BASE', 'Web_tls_port', '8081')
+            self.config.set('BASE', 'Web_tls_path', '')
             self.config.set('BASE', 'Sound', 'false')
             self.config.set('BASE', 'Notify', 'false')
             self.config.set('BASE', 'Log', 'false')
@@ -31,6 +34,9 @@ class BarnamySettings(object):
         settings['ip'] = self.config.get('BASE', "URL/IP")
         settings['port'] = self.config.getint('BASE', 'Port')
         settings['wport'] = self.config.getint('BASE', 'WPort')
+        settings['web_tls'] = self.config.getboolean('BASE', 'Web_tls')
+        settings['web_tls_port'] = self.config.getint('BASE', 'Web_tls_port')
+        settings['web_tls_path'] = self.config.get('BASE', 'Web_tls_path')
         settings['sound'] = self.config.getboolean('BASE', 'Sound')
         settings['notify'] =  self.config.getboolean('BASE', 'Notify')
         settings['log'] =  self.config.getboolean('BASE', 'Log')
@@ -38,10 +44,12 @@ class BarnamySettings(object):
         return settings
 
     def save_settings(self, settings):
-        #self.config.add_section('BASE')
         self.config.set('BASE', 'URL/IP', settings['ip'])
         self.config.set('BASE', 'Port', settings['port'])
         self.config.set('BASE', 'WPort', settings['wport'])
+        self.config.set('BASE', 'Web_tls', settings['web_tls'])
+        self.config.set('BASE', 'Web_tls_port', settings['web_tls_port'])
+        self.config.set('BASE', 'Web_tls_path', settings['web_tls_path'])
         self.config.set('BASE', 'Sound', settings['sound'])
         self.config.set('BASE', 'Notify', settings['notify'])
         self.config.set('BASE', 'Log', settings['log'])

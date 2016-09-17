@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 
+"""
+Created on Sun Apr 24 19:15:14 2016
+
+@author: jamesaxl
+"""
+
 from schema import Schema, And, Use
 
 class  BarnamyClientSchema(object):
@@ -39,6 +45,10 @@ class  BarnamyClientSchema(object):
         self.access_folder_valid = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'access_folder_valid'),
                                        'from_': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
                                        'to_':And(str), 'passwd':And(str)})
+    
+        self.info_user = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'info'),
+                                       'nick': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
+                                       'info':And(str)})
 
     def status_schema_f(self, data):
         try:
@@ -53,6 +63,13 @@ class  BarnamyClientSchema(object):
             return True
         except Exception:
             return False
+    def info_user_schema_user_f(self, data):
+        try:
+            data = self.info_user.validate(data)
+            return True
+        except Exception:
+            return False
+    
 
     def login_nok_schema_f(self, data):
         try:

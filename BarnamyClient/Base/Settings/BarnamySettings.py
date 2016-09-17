@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 
+"""
+Created on Sun Apr 24 19:15:14 2016
+
+@author: jamesaxl
+"""
+
 import ConfigParser
 import os
 from os.path import expanduser

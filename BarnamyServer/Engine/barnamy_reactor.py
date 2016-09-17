@@ -1,9 +1,17 @@
 # -*- coding: utf-8 -*-
 
+"""
+Created on Sun Apr 24 19:15:14 2016
+
+@author: jamesaxl
+"""
+
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
+from twisted.web import resource
 from streaming_schema import BarnamyServerSchema
 import structlog
+import json
 import msgpack
 import uuid
 import datetime
@@ -19,6 +27,7 @@ class BarnamyProtocol(LineReceiver):
         self.factory = factory
         self.name = None
         self.token_id = None
+        self.allow_sync_server = {}
         self.unpacker = msgpack.Unpacker()
         self.packer = msgpack.Packer()
         self.schema = BarnamyServerSchema()
@@ -41,8 +50,8 @@ class BarnamyProtocol(LineReceiver):
             log = self._log.bind(data=data)
             log.msg(message)
 
-    def lineReceived(self, line):
-        self.unpacker.feed(line)
+    def lineReceived(self, data):
+        self.unpacker.feed(data)
         data = self.unpacker.unpack()
         log = self._log.bind(data=data)
         if self.token_id == None:
@@ -71,8 +80,16 @@ class BarnamyProtocol(LineReceiver):
                 self.handle_IGNORE_USER(data, log)
             elif self.schema.unignore_user_f(data):
                 self.handle_UNIGNORE_USER(data, log)
+            elif self.schema.info_user_f(data):
+                self.handle_INFO_USER(data, log)
+            elif self.schema.sync_between_srv_f(data):
+                pass
             else:
                 self.sendLine(self.packer.pack(self.schema.error))
+
+    def handle_SYNC_SRV(self, data, log):
+        if not data['addr'] in self.allow_sync_server:
+            return
 
     def handle_REGISTER(self, data, log):
         if data['nick'] and data['email'] and ['passwd']:
@@ -113,8 +130,8 @@ class BarnamyProtocol(LineReceiver):
         if user.check_user(data['nick'], data['passwd']):
             self.name = data["nick"]
             self.factory.ignore_users[self.name] = []
-            self.factory.users[data["nick"]] = self
-            message = "%s has joined the channel" % (data["nick"],)
+            self.factory.users[data["nick"]] = [self, self.transport.getPeer().host]
+            message = "%s has joined the channel" % (self.name,)
 
             self.token_id = uuid.uuid1()
             self.broadcastMessage(self.packer.pack({"user_join_left":message, "user_list":self.factory.users.keys(), "user" : self.name}))
@@ -146,7 +163,7 @@ class BarnamyProtocol(LineReceiver):
         message = {"type":"private", "from_" : data['from_'], "to_":data['to_'], "msg":data['msg']}
         if not data['to_'] in self.factory.ignore_users[self.name]:
             if not self.name in self.factory.ignore_users[data['to_']]:
-                self.factory.users[data["to_"]].sendLine(self.packer.pack(message))
+                self.factory.users[data["to_"]][0].sendLine(self.packer.pack(message))
 
     def handle_FOLDER_SHARE(self, data, log):
         if data["token_id"] != str(self.token_id):
@@ -158,7 +175,7 @@ class BarnamyProtocol(LineReceiver):
         bernamylog = Model.barnamydb.Barnamydb()
         bernamylog.save_log(data, data['from_'], 'ACCESS_FOLDER')
         message = {"type":"folder", "from_" : data['from_'], "to_":data['to_']}
-        self.factory.users[data["to_"]].sendLine(self.packer.pack(message))
+        self.factory.users[data["to_"]][0].sendLine(self.packer.pack(message))
 
     def handle_FOLDER_SHARE_VALID(self, data, log):
         if data["token_id"] != str(self.token_id):
@@ -168,17 +185,7 @@ class BarnamyProtocol(LineReceiver):
         bernamylog = Model.barnamydb.Barnamydb()
         bernamylog.save_log(data, data['from_'], 'ACCESS_FOLDER_VALID')
         message = {"type":"access_folder_valid", "from_" : data['from_'], "to_":data['to_'], 'passwd':data['passwd']}
-        self.factory.users[data["to_"]].sendLine(self.packer.pack(message))
-
-    def handle_GET_USER_IP(self, data, log):
-        if data["token_id"] != str(self.token_id):
-            self.sendLine(self.packer.pack("Where did you get this Token_id :)."))
-            return
-        log.msg('Get IP')
-        bernamylog = Model.barnamydb.Barnamydb()
-        bernamylog.save_log(data, data['from_'], 'GET_USER_IP')
-        info = {"type":"addr_ip", "from_" : data['from_'], "to_":data['to_']}
-        self.factory.users[data["to_"]].sendLine(self.packer.pack(info))
+        self.factory.users[data["to_"]][0].sendLine(self.packer.pack(message))
 
     def handle_ADMINMSG(self, data, log):
         if data["token_id"] != str(self.token_id):
@@ -198,7 +205,6 @@ class BarnamyProtocol(LineReceiver):
             return
 
         self.factory.ignore_users[self.name].append(data['nick'])
-        print self.factory.ignore_users[self.name]
         log.msg('Ignore user')
         bernamylog = Model.barnamydb.Barnamydb()
         bernamylog.save_log(data, data['nick'], 'IGNORE')
@@ -212,13 +218,24 @@ class BarnamyProtocol(LineReceiver):
         bernamylog = Model.barnamydb.Barnamydb()
         bernamylog.save_log(data, data['nick'], 'UNIGNORE')
 
+    def handle_INFO_USER(self, data, log):
+        if data["token_id"] != str(self.token_id):
+            self.sendLine(self.packer.pack("Where did you get this Token_id :)."))
+            return
+
+        data = {"type":"info", "nick" : data['nick'], "info": self.factory.users[data["nick"]][1]}
+        self.factory.users[self.name][0].sendLine(self.packer.pack(data))
+        log.msg('Info user')
+        bernamylog = Model.barnamydb.Barnamydb()
+        bernamylog.save_log(data, data['nick'], 'INFO')
+
     def broadcastMessage(self, message):
         for name, protocol in self.factory.users.iteritems():
             if not name in self.factory.ignore_users[self.name]:
                 if not self.name in self.factory.ignore_users[name]:
-                    if protocol != self:
-                        protocol.sendLine(message)
-    
+                    if protocol[0] != self:
+                        protocol[0].sendLine(message)
+
     def logout(self, data, log):
         log.msg('LOGOUT')
         if data["token_id"] != str(self.token_id):
@@ -238,9 +255,25 @@ class BarnamyProtocol(LineReceiver):
             del self.factory.users[self.name]
 
 class BarnamyServer(Factory):
+
     def __init__(self):
         self.users = {}
         self.ignore_users = {}
 
     def buildProtocol(self, addr):
         return BarnamyProtocol(self)
+
+    class ServerSync(resource.Resource):
+        isLeaf = True
+
+        def render_POST(self, request):
+            return "add user"
+
+        def render_GET(self, request):
+            return json.dumps(request.content.read())
+
+        def render_PUT(self, request):
+            return "Put"
+
+        def render_DELETE(self, request):
+            return "Delete"

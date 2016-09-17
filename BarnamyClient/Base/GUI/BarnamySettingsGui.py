@@ -7,7 +7,6 @@ Created on Wed Apr 20 22:28:49 2016
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from gi.repository import Gio
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 

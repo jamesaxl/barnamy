@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+
+"""
+Created on Sat May  7 14:05:52 2016
+
+@author: jamesaxl
+"""
+
 import gi
 gi.require_version('Notify', '0.7')
 from gi.repository import Notify

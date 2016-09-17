@@ -72,6 +72,8 @@ class BarnamyUserList(Gtk.TreeView):
         USERS_CHAT[nick] = {'chat_private_view' : BarnamyChatViewer(), 
                                 'entry_text' : Gtk.Entry()}
         USERS_CHAT[nick]['chat_private_view'].users_tag[nick] = USERS_CHAT[nick]['chat_private_view'].radom_color(nick)
+        if not self.BarnamyBase.nick in USERS_CHAT[nick]['chat_private_view'].users_tag:
+            USERS_CHAT[nick]['chat_private_view'].users_tag[self.BarnamyBase.nick] = USERS_CHAT[nick]['chat_private_view'].chat_buffer.create_tag("user_color", foreground="#0000FF")
         chat_view_scrollbar = Gtk.ScrolledWindow()
         chat_view_scrollbar.add(USERS_CHAT[nick]['chat_private_view'])
         main_chat_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=7)

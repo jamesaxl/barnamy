@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
+
+"""
+Created on Sat May  7 14:05:52 2016
+
+@author: jamesaxl
+"""
+
 import sys
 import os
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy_utils import database_exists, create_database
 from bcrypt import hashpw, gensalt
 sys.path.append(os.getcwd() + "/Settings")
 from Settings.BarnamySettings import BarnamySettings as BRS
@@ -9,31 +18,48 @@ BARNAMY_CONF_DIR = expanduser("~/.barnamy")
 
 session=None
 engine = None
+DB_USER =None
+DB_NAME =None
+DB_PASSWD =None
 
 DB_ENGINE = BRS()
 if DB_ENGINE.get_settings() == "mongodb":
     import barnamyMongoDb
     DB_ENGINE = {'type':'mongodb', 'user':barnamyMongoDb.User, 'log':barnamyMongoDb.BernamyLog, 'admin_msg':barnamyMongoDb.AdminMsg}
 elif DB_ENGINE.get_settings() == "sqlite" or DB_ENGINE.get_settings() == "mariadb" or DB_ENGINE.get_settings() == "postgresql":
-    from barnamySqliteDb import Base
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.orm.exc import NoResultFound
+    from barnamyTables import Base
     if DB_ENGINE.get_settings() == "sqlite":
-        import barnamySqliteDb
+        import barnamyTables as barnamySqliteDb
         engine = create_engine('sqlite:///'+BARNAMY_CONF_DIR+'/barnamydb.db')
         DB_ENGINE = {'type':'sqlite', 'user':barnamySqliteDb.User, 'log':barnamySqliteDb.BernamyLog, 'admin_msg':barnamySqliteDb.AdminMsg}
+
     elif DB_ENGINE.get_settings() == "mariadb":
-        import barnamyMariadb
-        engine = create_engine("mysql://root:secret@localhost/barnamydb")
-        DB_ENGINE = {'type':'mariadb', 'user':barnamyMariadb.User, 'log':barnamyMariadb.BernamyLog, 'admin_msg':barnamyMariadb.AdminMsg}
+        import barnamyTables as barnamyMariaDb
+        DB_USER = DB_ENGINE.get_info()[0]
+        DB_PASSWD = DB_ENGINE.get_info()[1]
+        engine = create_engine("mysql://%s:%s@localhost/barnamydb"%(DB_USER, DB_PASSWD,))
+        if not database_exists(engine.url):
+            create_database(engine.url)
+        DB_ENGINE = {'type':'mariadb', 'user':barnamyMariaDb.User, 'log':barnamyMariaDb.BernamyLog, 'admin_msg':barnamyMariaDb.AdminMsg}
+
     elif DB_ENGINE.get_settings() == "postgresql":
-        import barnamyPostgres
-        engine = create_engine("postgresql+psycopg2cffi://jamesaxl:secret@localhost/barnamydb")
+        import barnamyTables as barnamyPostgres
+        DB_USER = DB_ENGINE.get_info()[0]
+        DB_PASSWD = DB_ENGINE.get_info()[1]
+        engine = create_engine("postgresql+psycopg2cffi://%s:%s@localhost/barnamydb"%(DB_USER, DB_PASSWD,))
+#        if not database_exists(engine.url):
+#            sub_engine = create_engine("postgresql+psycopg2cffi://%s:%s@localhost/postgres"%(DB_USER, DB_PASSWD,))
+#            conn = sub_engine.connect()
+#            conn.execute("commit")
+#            conn.execute("create database barnamydb")
+#            conn.close()
         DB_ENGINE = {'type':'postgresql', 'user':barnamyPostgres.User, 'log':barnamyPostgres.BernamyLog, 'admin_msg':barnamyPostgres.AdminMsg}
-
+        
+    Base.metadata.create_all(engine)
     Base.metadata.bind = engine
-
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
 

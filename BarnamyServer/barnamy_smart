@@ -8,7 +8,7 @@ from os.path import expanduser
 from Model.barnamydb import Barnamydb
 import string
 import random
-
+import getpass
 BARNAMY_CONF_DIR = expanduser("~/.barnamy")
 BARNAMY_CONF_D_FILE = BARNAMY_CONF_DIR + "/barnamyd.conf"
 BARNAMY_CONF_C_FILE = BARNAMY_CONF_DIR + "/barnamyc.conf"
@@ -50,7 +50,7 @@ cmd = ""
 
 def register_user():
     nick = raw_input("Enter nick: ")
-    while len(nick) < 3 and len(nick) > 10:
+    while len(nick) < 4 and len(nick) > 10:
         nick = raw_input("Check nick lenght! enter new nick: ")
     while db.check_dup_user(nick):
         nick = raw_input("This nick is registered! enter new nickl: ")
@@ -59,14 +59,14 @@ def register_user():
     while db.check_dup_email(email):
         email = raw_input("This email is registered enter new email: ")
 
-    passwd = raw_input("Enter password: ")
-    while(len(passwd) < 3):
-        passwd = raw_input("Check password lenght! enter new password: ")
-    passwd_confirm = raw_input("Re-enter your password: ")
+    passwd = getpass.getpass("Enter password: ")
+    while(len(passwd) < 7):
+        passwd = getpass.getpass("Check password lenght! enter new password: ")
+    passwd_confirm = getpass.getpass("Re-enter your password: ")
 
     while passwd != passwd_confirm:
-        passwd = raw_input("Password not match! enter password: ")
-        passwd_confirm = raw_input("Re-enter your password: ")
+        passwd = getpass.getpass("Password not match! enter password: ")
+        passwd_confirm = getpass.getpass("Re-enter your password: ")
 
     db.save_user_by_admin(nick, email, passwd)
 
@@ -79,19 +79,18 @@ while cmd != "exit":
 
             print """
     \t0- Setup server config (local server)
-    \t1- Setup client config
-    \t2- Add user
-    \t3- Add list of users
-    \t4- Deactive user
-    \t5- Check users message
-    \t6- Check register requests sent by user(s)
-    \t7- Bane User
-    \tAdvanced : "barnamy_admin new password" to set a new admin password
-                 "user new password"
+    \t1- Add user
+    \t2- Add list of users
+    \t3- Deactive user
+    \t4- Check users message
+    \t5- Check register requests sent by user(s)
+    \t6- Bane User
+    \t7- Advanced : "barnamy_admin new password" to set a new admin password
+                    "user new password to set a new user password"
     """
         if cmd == str(0):
             print "You are going setup you barnamy local server"
-            db = raw_input("select dabase (s)qlite | (m)ongodb | ma(r)iadb | (p)ostgresql: ")
+            db = raw_input("select dabase system (s)qlite | (m)ongodb | ma(r)iadb | (p)ostgresql: ")
             user_no = input("select number of users in your server: ")
             tls = raw_input("Tls (y)es/(n)o: ")
             pathtls = BARNAMY_CONF_DIR
@@ -111,15 +110,35 @@ while cmd != "exit":
                 config.set('DataBase', 'mariadb', 'false')
                 config.set('DataBase', 'postgresql', 'false')
             elif db == 'r':
+                db_user = raw_input('Enter database user: ')
+                while not db_user or ' ' in db_user:
+                    db_user = raw_input('Enter database user: ')
+
+                db_passwd = raw_input('Enter database password: ')
+                while not db_passwd or ' ' in db_passwd:
+                    db_passwd = raw_input('Enter database password: ')
+
                 config.set('DataBase', 'mongodb', 'false')
                 config.set('DataBase', 'sqlite', 'false')
                 config.set('DataBase', 'mariadb', 'true')
                 config.set('DataBase', 'postgresql', 'false')
+                config.set('DataBase', 'user', db_user)
+                config.set('DataBase', 'passwd', db_passwd)
             elif db == 'p':
+                db_user = raw_input('Enter database user: ')
+                while not db_user or ' ' in db_user:
+                    db_user = raw_input('Enter database user: ')
+
+                db_passwd = raw_input('Enter database password: ')
+                while not db_passwd or ' ' in db_passwd:
+                    db_passwd = raw_input('Enter database password: ')
+         
                 config.set('DataBase', 'mongodb', 'false')
                 config.set('DataBase', 'sqlite', 'false')
                 config.set('DataBase', 'mariadb', 'false')
                 config.set('DataBase', 'postgresql', 'true')
+                config.set('DataBase', 'user', db_user)
+                config.set('DataBase', 'passwd', db_passwd)
 
             config.add_section('MaxUsers')
             config.set('MaxUsers', 'no', user_no)
@@ -138,7 +157,7 @@ while cmd != "exit":
             with open(BARNAMY_CONF_D_FILE, 'wb') as configfile:
                 config.write(configfile)
 
-        if cmd == str(1):
+        if cmd == str("none"):
             print "You are going setup you barnamy local client"
             url = raw_input("Enter barnamy host server: ")
             port = input("Enter barnamy port server: ")
@@ -168,28 +187,28 @@ while cmd != "exit":
             with open(BARNAMY_CONF_C_FILE, 'wb') as configfile:
                 config.write(configfile)
 
-        if cmd == str(2):
+        if cmd == str(1):
             register_user()
 
-        if cmd == str(3):
+        if cmd == str(2):
             users = input("Enter the number of users that you want to add: ")
             for user in range(users):
                 register_user()
 
-        if cmd == str(4):
+        if cmd == str(3):
             user = raw_input("Enter the nick of the user that you want to deactive: ")
             if db.deactive_user(user): print "%s deactived" %user
             else: print "Enter a valid nick"
             print ""
 
-        if cmd == str(5):
+        if cmd == str(4):
             db = Barnamydb()
             requests = db.get_user_msg_admin()
             if requests:
                 for request in requests:
                     print "%s %s" %(request.nick, request.msg)
 
-        if cmd == str(6):
+        if cmd == str(5):
             db = Barnamydb()
             for user in db.get_requests():
                 yes_no = None
@@ -201,32 +220,38 @@ while cmd != "exit":
                     elif yes_no in NO:
                         #send email
                         break
-
-        if cmd == 'barnamy_admin new password':
-            passwd = raw_input("Enter password: ")
-            while(len(passwd) < 3):
-                passwd = raw_input("Check password lenght! enter new password: ")
-            passwd_confirm = raw_input("Re-enter your password: ")
-
-            while passwd != passwd_confirm:
-                passwd = raw_input("Password not match! enter password: ")
-                passwd_confirm = raw_input("Re-enter your password: ")
-            db.update_user('barnamyadmin', passwd)
-
-        if cmd == 'user new password':
-            nick = raw_input("Please a nick: ")
-            if not db.check_dup_user(nick):
-                print "%s does not exist please try again"
-            else:
-                passwd = raw_input("Enter password: ")
-                while(len(passwd) < 3):
-                    passwd = raw_input("Check password lenght! enter new password: ")
-                passwd_confirm = raw_input("Re-enter your password: ")
-
-                while passwd != passwd_confirm:
-                    passwd = raw_input("Password not match! enter password: ")
-                    passwd_confirm = raw_input("Re-enter your password: ")
-                db.update_user(nick, passwd)
+        if cmd == str(7):
+            print '<\<\<\ Advanced mode />/>/>'
+            while cmd != 'exit':
+                cmd = raw_input('>>>')
+                if cmd == 'barnamy_admin new password':
+                    passwd = getpass.getpass("Enter password: ")
+                    while(len(passwd) < 7):
+                        passwd = getpass.getpass("Check password lenght! enter new password: ")
+                    passwd_confirm = getpass.getpass("Re-enter your password: ")
+        
+                    while passwd != passwd_confirm:
+                        passwd = getpass.getpass("Password not match! enter password: ")
+                        passwd_confirm = getpass.getpass("Re-enter your password: ")
+                    db.update_user('barnamyadmin', passwd)
+        
+                if cmd == 'user new password':
+                    nick = raw_input("Please a nick: ")
+                    if not db.check_dup_user(nick):
+                        print "%s does not exist please try again"
+                    else:
+                        passwd = getpass.getpass("Enter password: ")
+                        while(len(passwd) < 7):
+                            passwd = getpass.getpass("Check password lenght! enter new password: ")
+                        passwd_confirm = getpass.getpass("Re-enter your password: ")
+        
+                        while passwd != passwd_confirm:
+                            passwd = getpass.getpass("Password not match! enter password: ")
+                            passwd_confirm = getpass.getpass("Re-enter your password: ")
+                        db.update_user(nick, passwd)
+                if cmd == 'help':
+                    print """"barnamy_admin new password" to set a new admin password
+                              user new password to set a new user password"""
 
         if cmd == "credit":
             pass

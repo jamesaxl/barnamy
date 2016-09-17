@@ -3,10 +3,11 @@
 
 from Base.Settings.BarnamySettings import BarnamySettings as BRS
 import Base
-from twisted.internet import reactor, ssl
+from twisted.internet import reactor
 IBRS = BRS()
 
 if IBRS.get_settings()['tls']:
+    from twisted.internet import ssl
     reactor.connectSSL(IBRS.get_settings()['ip'], IBRS.get_settings()['port'], Base.BarnamyClientBase.BarnamyClientFactory(), ssl.ClientContextFactory())
 else:
     reactor.connectTCP(IBRS.get_settings()['ip'], IBRS.get_settings()['port'], Base.BarnamyClientBase.BarnamyClientFactory())

@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 
+"""
+Created on Sat May  7 14:05:52 2016
+
+@author: jamesaxl
+"""
+
 import os
 from os.path import expanduser
 

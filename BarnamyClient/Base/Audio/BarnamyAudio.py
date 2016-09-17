@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 
+"""
+Created on Sat May  7 14:05:52 2016
+
+@author: jamesaxl
+"""
+
 import sys, os
 import gi
 gi.require_version('Gst', '1.0')

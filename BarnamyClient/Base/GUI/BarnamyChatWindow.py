@@ -156,6 +156,8 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
                         elif msg.startswith('/admin') and msg.split(' ')[1]:
                             data = {"type":"admin", "nick":self.BarnamyBase.nick, "token_id":self.BarnamyBase.token_id, "msg":msg.split(' ')[1]}
                             self.BarnamyBase.barnamy_actions['send_pub_msg'](data)
+                        elif msg.startswith('/info') and msg.split(' ')[1]:
+                            self.BarnamyBase.barnamy_actions['get_info'](msg.split(' ')[1])
                     return
 
                 self.barnamy_text_chat_view.put_msg_(self.BarnamyBase.nick, msg)
@@ -190,6 +192,9 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
     def recv_status_user(self, data):
         self.search_user_to_change_status(data['nick'], data['status'])
 
+    def recv_info_user(self, data):
+        self.barnamy_text_chat_view.put_user_info(data['nick'], data['info'])
+
     def lost_hint(self, widget, event):
         self.set_urgency_hint(False)
 
@@ -208,7 +213,8 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
         barnamy_tag_table = self.barnamy_text_chat_view.chat_buffer.get_tag_table()
         for user in self.barnamy_text_chat_view.users_tag:
             tag = barnamy_tag_table.lookup(user)
-            barnamy_tag_table.remove(tag)
+            if tag:
+                barnamy_tag_table.remove(tag)
 
     def RunBarnamyChatWindow(self):
         self.barnamy_chat_win_state = True    
@@ -217,6 +223,7 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
         message_id = self.statusbar.push(context_id, 'connected to barnamy as %s'%self.BarnamyBase.nick)
         self.banramy_text_chat_enter.grab_focus()
         self.barnamy_text_chat_view.barnamy_welcome()
+        self.barnamy_text_chat_view.users_tag[self.BarnamyBase.nick] = self.barnamy_text_chat_view.chat_buffer.create_tag("user_color", foreground="#0000FF")
 
     def barnamy_settings(self, action, parameter):
         self.settings_ins.barnamy_settings_open()

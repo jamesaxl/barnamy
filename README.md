@@ -1,5 +1,5 @@
 # barnamy
-barnamy for the love of community
+barnamy is an application for chat, and for control robots as device(BeagleBone, Raspberry Pi oder board that support python) on the network even over internet.
 
 # Install
 

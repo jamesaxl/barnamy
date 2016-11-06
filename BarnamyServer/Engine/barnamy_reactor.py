@@ -20,6 +20,7 @@ import sys
 sys.path.append(os.getcwd() + "/Model")
 import Model
 import re
+import random
 
 logger = structlog.getLogger()
 class BarnamyProtocol(LineReceiver):
@@ -82,6 +83,8 @@ class BarnamyProtocol(LineReceiver):
                 self.handle_UNIGNORE_USER(data, log)
             elif self.schema.info_user_f(data):
                 self.handle_INFO_USER(data, log)
+            elif self.schema.kick_user_f(data):
+                self.handle_KICK_USER(data, log)
             elif self.schema.sync_between_srv_f(data):
                 pass
             else:
@@ -134,8 +137,10 @@ class BarnamyProtocol(LineReceiver):
             message = "%s has joined the channel" % (self.name,)
 
             self.token_id = uuid.uuid1()
-            self.broadcastMessage(self.packer.pack({"user_join_left":message, "user_list":self.factory.users.keys(), "user" : self.name}))
-            self.sendLine(self.packer.pack({"type":"login", "nick":self.name, "token_id":str(self.token_id), "user_list":self.factory.users.keys()}))
+            self.broadcastMessage(self.packer.pack({"user_join_left":message, "user_list":self.factory.users.keys(), 
+                                                    "user" : self.name}))
+            self.sendLine(self.packer.pack({"type":"login", "nick":self.name, "token_id":str(self.token_id), 
+                                            "user_list":self.factory.users.keys()}))
             log.msg('LOGIN')
             bernamylog = Model.barnamydb.Barnamydb()
             bernamylog.save_log(data, data['nick'], 'LOGIN')
@@ -250,9 +255,31 @@ class BarnamyProtocol(LineReceiver):
         log = self._log.bind(data=data)
         log.msg(message)
 
-    def kick_user(nick):
-        if self.name in self.factory.users:
-            del self.factory.users[self.name]
+    # It does not work as we want
+    def handle_KICK_USER(self, data, log):
+        if data["token_id"] != str(self.token_id):
+            self.sendLine(self.packer.pack("Where did you get this Token_id :)."))
+            return
+        from_ = data["from_"]
+        nick = data["nick"]
+        if nick != from_:
+            if nick in self.factory.users:
+                user = Model.barnamydb.Barnamydb()
+                if user.check_admin(from_):
+                    del self.factory.users[nick]
+                    message = "%s kicked by %s" % (nick, from_)
+                    data = {"type" : "kick", "msg" : message}
+                    self.sendLine(self.packer.pack(data))
+                    log = self._log.bind(data=data)
+                    log.msg(message)
+                else:
+                    message = "You are not admin"
+                    data = {"type" : "kick", "msg" : message}
+                    self.factory.users[from_][0].sendLine(self.packer.pack(data))
+        else:
+            message = "You can not kick yourself from channel"
+            data = {"type" : "kick", "msg" : message}
+            self.factory.users[from_][0].sendLine(self.packer.pack(data))
 
 class BarnamyServer(Factory):
 
@@ -263,17 +290,24 @@ class BarnamyServer(Factory):
     def buildProtocol(self, addr):
         return BarnamyProtocol(self)
 
-    class ServerSync(resource.Resource):
+    class ServerQuotes(resource.Resource):
         isLeaf = True
+        QUOTES = None
 
         def render_POST(self, request):
-            return "add user"
+            return 'DONE'
 
         def render_GET(self, request):
-            return json.dumps(request.content.read())
+            with open(os.getcwd() + '/Engine/quotes.json') as data_file:
+                self.QUOTES = json.load(data_file) 
+            key = random.choice(self.QUOTES.keys())
+            index = random.randint(0, len(self.QUOTES[key]) - 1)
+            return json.dumps({key : self.QUOTES[key][index]})
+            
 
         def render_PUT(self, request):
             return "Put"
 
         def render_DELETE(self, request):
             return "Delete"
+

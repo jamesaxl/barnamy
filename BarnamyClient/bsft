@@ -39,10 +39,8 @@ class GuiSettingFirstTime(Gtk.Window):
         self.web_server_port = Gtk.Entry()
         self.web_server_action = Gtk.Switch()
         
-        web_server_tls = Gtk.Label("TLS")
         self.web_server_tls_action = Gtk.Switch()
         self.web_server_tls_port = Gtk.Entry()
-        self.web_server_tls_path = Gtk.Entry()
 
         sound_expander = Gtk.Expander()
         self.sound_switch = Gtk.Switch()
@@ -77,10 +75,8 @@ class GuiSettingFirstTime(Gtk.Window):
         hbox1.pack_start(self.web_server_port, False, True, 7)
         hbox1.pack_start(self.web_server_action, False, False, 7)
         
-        hbox_ws.pack_start(web_server_tls, False, True, 7)
         hbox_ws.pack_start(self.web_server_tls_port, False, True, 7)
         hbox_ws.pack_start(self.web_server_tls_action, False, True, 7)
-        hbox_ws.pack_start(self.web_server_tls_path, False, True, 7)
 
         vbox_ws.pack_start(hbox1, False, True, 0)
         vbox_ws.pack_start(hbox_ws, False, True, 0)
@@ -111,7 +107,6 @@ class GuiSettingFirstTime(Gtk.Window):
         self.web_server_port.set_text(str(settings['wport']))
         self.web_server_tls_action.set_active(settings['web_tls'])
         self.web_server_tls_port.set_text(str(settings['web_tls_port']))
-        self.web_server_tls_path.set_text(settings['web_tls_path'])
         self.sound_switch.set_active(settings['sound'])
         self.notify_switch.set_active(settings['notify'])
         self.log_switch.set_active(settings['log'])
@@ -121,7 +116,7 @@ class GuiSettingFirstTime(Gtk.Window):
     def barnamy_settings_save(self, widget):
         data = {'ip' : self.barnamy_ip_entry.get_text(), 'port' : self.barnamy_port_entry.get_text(), 
                 'wport' : self.web_server_port.get_text(), 'web_tls' : self.web_server_tls_action.get_active(), 
-                'web_tls_port' : self.web_server_tls_port.get_text(), 'web_tls_path' : self.web_server_tls_path.get_text(),
+                'web_tls_port' : self.web_server_tls_port.get_text(),
                 'sound' : self.sound_switch.get_active(), 'notify' : self.notify_switch.get_active(), 
                 'log' : self.log_switch.get_active(), 'tls' : self.tls_switch.get_active()}
         self.BarnamyBase.save_settings(data)

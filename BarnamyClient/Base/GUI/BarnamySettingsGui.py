@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr 20 22:28:49 2016
@@ -7,7 +8,10 @@ Created on Wed Apr 20 22:28:49 2016
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
+from time import time as timer
 import signal
+from twisted.internet import task
+from twisted.internet import reactor
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 class BarnamySettingsGui(Gtk.Window):
@@ -15,14 +19,13 @@ class BarnamySettingsGui(Gtk.Window):
     def __init__(self, Base):
         self.BarnamyBase = Base
         Gtk.Window.__init__(self, title="Barnamy Settings")
-        self.connect("delete-event", Gtk.main_quit)
         self.connect("delete-event", self.barnamy_settings_close)
-        
         vbox1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=7)
         hbox1 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         hbox_ws = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         vbox_ws = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
         hbox2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3)
+        self.statusbar = Gtk.Statusbar()
 
         self.barnamy_ip_entry = Gtk.Entry()
         self.barnamy_port_entry = Gtk.Entry()
@@ -34,13 +37,12 @@ class BarnamySettingsGui(Gtk.Window):
 
         web_server_expander = Gtk.Expander()
         web_server_expander.set_label('Web Server')
+        
         self.web_server_port = Gtk.Entry()
         self.web_server_action = Gtk.Switch()
         
-        web_server_tls = Gtk.Label("TLS")
         self.web_server_tls_action = Gtk.Switch()
         self.web_server_tls_port = Gtk.Entry()
-        self.web_server_tls_path = Gtk.Entry()
 
         sound_expander = Gtk.Expander()
         self.sound_switch = Gtk.Switch()
@@ -75,10 +77,8 @@ class BarnamySettingsGui(Gtk.Window):
         hbox1.pack_start(self.web_server_port, False, True, 7)
         hbox1.pack_start(self.web_server_action, False, False, 7)
         
-        hbox_ws.pack_start(web_server_tls, False, True, 7)
         hbox_ws.pack_start(self.web_server_tls_port, False, True, 7)
         hbox_ws.pack_start(self.web_server_tls_action, False, True, 7)
-        hbox_ws.pack_start(self.web_server_tls_path, False, True, 7)
         
         vbox_ws.pack_start(hbox1, False, True, 0)
         vbox_ws.pack_start(hbox_ws, False, True, 0)
@@ -98,11 +98,19 @@ class BarnamySettingsGui(Gtk.Window):
         vbox1.pack_start(notify_expander, False, True, 0)
         vbox1.pack_start(tls_expander, False, True, 0)
         vbox1.pack_end(hbox2, False, True, 0)
+        vbox1.pack_end(self.statusbar, False, True, 0)
         vbox1.set_border_width(10)
         self.add(vbox1)
         
     def barnamy_settings_close(self, widget, event = 0):
         self.hide()
+        return True
+
+    def start_web_srv(self):
+        self.BarnamyBase.barnamy_actions['start_web_server']()
+
+    def stop_web_srv(self):
+        self.BarnamyBase.barnamy_actions['stop_web_server']()
 
     def barnamy_settings_open(self):
         settings = self.BarnamyBase.barnamy_settings_actions['get_settings']()
@@ -111,7 +119,6 @@ class BarnamySettingsGui(Gtk.Window):
         self.web_server_port.set_text(str(settings['wport']))
         self.web_server_tls_action.set_active(settings['web_tls'])
         self.web_server_tls_port.set_text(str(settings['web_tls_port']))
-        self.web_server_tls_path.set_text(settings['web_tls_path'])
         self.sound_switch.set_active(settings['sound'])
         self.notify_switch.set_active(settings['notify'])
         self.log_switch.set_active(settings['log'])
@@ -119,9 +126,18 @@ class BarnamySettingsGui(Gtk.Window):
         self.show_all()
 
     def barnamy_settings_save(self, widget):
+        #if self.tls_switch.set_active(settings['tls']):
+            #self.barnamy_port_entry.set_text("60253")
         data = {'ip' : self.barnamy_ip_entry.get_text(), 'port' : self.barnamy_port_entry.get_text(), 
                 'wport' : self.web_server_port.get_text(), 'web_tls' : self.web_server_tls_action.get_active(), 
-                'web_tls_port' : self.web_server_tls_port.get_text(), 'web_tls_path' : self.web_server_tls_path.get_text(),
-                'sound' : self.sound_switch.get_active(), 'notify' : self.notify_switch.get_active(), 
+                'web_tls_port' : self.web_server_tls_port.get_text(),'sound' : self.sound_switch.get_active(), 'notify' : self.notify_switch.get_active(), 
                 'log' : self.log_switch.get_active(), 'tls' : self.tls_switch.get_active()}
         self.BarnamyBase.barnamy_settings_actions['save_settings'](data)
+        context_id = self.statusbar.get_context_id("BarnamySetting")
+        message_id = self.statusbar.push(context_id, "Data saved")
+        task.deferLater(reactor, 3, self.hide_save_msg)
+        
+    def hide_save_msg(self):
+        context_id = self.statusbar.get_context_id("BarnamySetting")
+        message_id = self.statusbar.push(context_id, "")
+

@@ -38,3 +38,4 @@ class BarnamayPastBin(object):
         page = response.read()
         res = re.search("/raw/([a-zA-Z0-9]+)", page)
         return 'https://bpaste.net/show/%s' %res.group(1)
+

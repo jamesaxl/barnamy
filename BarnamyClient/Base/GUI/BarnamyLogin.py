@@ -12,7 +12,6 @@ gtk3reactor.install()
 from gi.repository import Gtk
 from gi.repository import Gio
 from gi.repository import GdkPixbuf
-
 from twisted.internet import reactor
 from time import gmtime, strftime
 import signal
@@ -27,7 +26,6 @@ class BarnamyLogin(Gtk.ApplicationWindow):
 
     def __init__(self, Base = 0):
         self.BarnamyBase = Base
-        
         Gtk.Window.__init__(self, title="Barnamy Login")
         self.statusbar = Gtk.Statusbar()        
         self.set_default_size(400, 300)
@@ -108,7 +106,7 @@ class BarnamyLogin(Gtk.ApplicationWindow):
 
     def recv_status_before_login(self, data):
         context_id = self.statusbar.get_context_id("barnamy")
-        message_id = self.statusbar.push(context_id, data["status"]) 
+        message_id = self.statusbar.push(context_id, data["status"])
 
     def about_callback(self, action, parameter):
         BarnamyDialogAbout(self).run()

@@ -129,9 +129,6 @@ class BarnamyUserList(Gtk.TreeView):
                 USERS_CHAT[data['user']]['entry_text'].set_sensitive(False)
 
     def update_users_list(self, nick):
-#        self.user_liststore.clear()
-#        for i in list:
-#            self.user_liststore.append([i, "Online"])
         for user in self.user_liststore:
             if user[0] == nick:
                 self.user_liststore.remove(user.iter)

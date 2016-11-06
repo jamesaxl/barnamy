@@ -16,7 +16,7 @@ It is better to create a virtual env for python2 and use pip to install this req
 7.  pyOpenSSL
 8.  schema
 9.  service-identity
-10. SQLAlchemy
+10. SQLAlchemy and SQLAlchemy-Utils
 11. structlog
 12. Twisted
 

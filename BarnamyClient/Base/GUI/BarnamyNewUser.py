@@ -10,7 +10,8 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gio
 from BarnamyDialogWarning import BarnamyDialogWarning
-
+from twisted.internet import task
+from twisted.internet import reactor
 import re
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -58,12 +59,18 @@ class BarnamyNewUser(Gtk.ApplicationWindow):
 
     def barnamy_new_user_close(self, widget, event = 0):
         self.hide()
+        return True
 
     def recv_register(self, data):
         context_id = self.statusbar.get_context_id("Barnamy")
         message_id = self.statusbar.push(context_id, data["succ"])
         self.clear_entry(None)
+        task.deferLater(reactor, 3, self.hide_registered_msg)
 
+    def hide_registered_msg(self):
+        context_id = self.statusbar.get_context_id("Barnamy")
+        message_id = self.statusbar.push(context_id ,"")
+        
     def regiser_new_user(self, widget):
         if not self.nickname.get_text():
             BarnamyDialogWarning(self, "Nick required")

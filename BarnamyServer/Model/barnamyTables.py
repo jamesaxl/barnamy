@@ -24,6 +24,7 @@ class User(Base):
     email = Column(String(30), nullable=False, unique=True)
     date_register = Column(DateTime, nullable=False,  default = datetime.datetime.now)
     active = Column(Boolean, nullable=False,  default = False)
+    admin = Column(Boolean, nullable=False,  default = False)
 
 class BernamyLog(Base):
     __tablename__ = 'BernamyLog'

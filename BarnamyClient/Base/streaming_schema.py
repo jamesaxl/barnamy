@@ -49,10 +49,19 @@ class  BarnamyClientSchema(object):
         self.info_user = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'info'),
                                        'nick': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
                                        'info':And(str)})
-
+        
+        self.kick_schema = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'kick'),
+                                       'msg': And(str)})
     def status_schema_f(self, data):
         try:
             data = self.status_ok_schema.validate(data)
+            return True
+        except Exception:
+            return False
+
+    def kick_schema_user_f(self, data):
+        try:
+            data = self.kick_schema.validate(data)
             return True
         except Exception:
             return False
@@ -63,6 +72,7 @@ class  BarnamyClientSchema(object):
             return True
         except Exception:
             return False
+
     def info_user_schema_user_f(self, data):
         try:
             data = self.info_user.validate(data)

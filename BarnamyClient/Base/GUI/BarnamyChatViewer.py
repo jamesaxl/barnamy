@@ -8,7 +8,7 @@ Created on Tue Apr 26 19:33:52 2016
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Pango, Gdk
-from time import gmtime, strftime
+from time import strftime
 import webbrowser
 import re
 import random
@@ -37,7 +37,7 @@ class BarnamyChatViewer(Gtk.TextView):
         
         end_chat_sel = self.chat_buffer.get_end_iter()
 
-        self.chat_buffer.insert(end_chat_sel, "[%s]"%(strftime("%H:%M:%S", gmtime()),))
+        self.chat_buffer.insert(end_chat_sel, "[%s]"%(strftime("%H:%M:%S"),))
         end_chat_sel = self.chat_buffer.get_end_iter()
 
         self.chat_buffer.insert_with_tags(end_chat_sel, '<%s> ' %nick, 
@@ -52,11 +52,19 @@ class BarnamyChatViewer(Gtk.TextView):
         url_reg = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
         for word in msg:
             if url_reg.match(word):
-                start_chat_sel = self.chat_buffer.get_start_iter()
-                match_start, match_end = start_chat_sel.forward_search(word, Gtk.TextSearchFlags.TEXT_ONLY, None)
-                if match_start and match_end:
-                  self.chat_buffer.apply_tag(self.tag_url, match_start, match_end)
-                  self.tag_url.connect("event", self.open_link, word)
+                start = self.chat_buffer.get_start_iter()
+                self.search_link_and_tag(word, start)
+        #self.BarnamyBase.
+
+    def search_link_and_tag(self, word, start):
+        end_chat_sel = self.chat_buffer.get_end_iter()
+        found_link_word = start.forward_search(word, Gtk.TextSearchFlags.TEXT_ONLY, end_chat_sel)
+        if found_link_word:
+            match_start, match_end  = found_link_word
+            self.chat_buffer.apply_tag(self.tag_url, match_start, match_end)
+            self.tag_url.connect("event", self.open_link, word)
+            self.search_link_and_tag(word, match_end)
+        
 
     def radom_color(self, nick):
         colors = ['#FF0000', '#FF0088', '#FF00FF', '#8400FF', 
@@ -70,7 +78,7 @@ class BarnamyChatViewer(Gtk.TextView):
         if self.emoticons_filter(msg):
             msg = self.emoticons_filter(msg)
         end_chat_sel = self.chat_buffer.get_end_iter()
-        self.chat_buffer.insert(end_chat_sel, "[%s]"%(strftime("%H:%M:%S", gmtime()),))
+        self.chat_buffer.insert(end_chat_sel, "[%s]"%(strftime("%H:%M:%S"),))
         end_chat_sel = self.chat_buffer.get_end_iter()
         self.chat_buffer.insert_with_tags(end_chat_sel, '<%s> ' %nick, 
                                      self.highlight_tag, self.bold)
@@ -87,51 +95,42 @@ class BarnamyChatViewer(Gtk.TextView):
         for cmd, info in cmds.items():
             end_chat_sel = self.chat_buffer.get_end_iter()
             self.chat_buffer.insert_with_tags(end_chat_sel, "\t%s : %s\n"%(cmd, info), self.join_left_cmd_tag)
+        self.scroll_to_mark(self.chat_buffer.get_insert(), 0.0, True, 0.5, 0.5)
 
 
     def put_folder_access(self, user):
         end_chat_sel = self.chat_buffer.get_end_iter()
         self.chat_buffer.insert_with_tags(end_chat_sel, "##### You receive a request from %s for sharing folder. To allow this user please type /allow <nick> #####\n"%user,
                                           self.join_left_cmd_tag)
+        self.scroll_to_mark(self.chat_buffer.get_insert(), 0.0, True, 0.5, 0.5)
 
     def put_folder_access_valid(self, nick, passwd):
         end_chat_sel = self.chat_buffer.get_end_iter()
-        self.chat_buffer.insert_with_tags(end_chat_sel, "---%s accepted you, the Password is %s and you should not lose it---\n"%(nick, passwd), 
+        self.chat_buffer.insert_with_tags(end_chat_sel, "---%s is accepted you, the Password is %s and you should not lose it---\n"%(nick, passwd), 
             self.join_left_cmd_tag)
+        self.scroll_to_mark(self.chat_buffer.get_insert(), 0.0, True, 0.5, 0.5)
 
     def recv_left_joing(self, msg):
         end_chat_sel = self.chat_buffer.get_end_iter()
-        self.chat_buffer.insert_with_tags(end_chat_sel, "[%s] %s\n" %(strftime("%H:%M:%S", gmtime()), msg,), self.join_left_cmd_tag)
+        self.chat_buffer.insert_with_tags(end_chat_sel, "[%s] %s\n" %(strftime("%H:%M:%S"), msg,), self.join_left_cmd_tag)
+        self.scroll_to_mark(self.chat_buffer.get_insert(), 0.0, True, 0.5, 0.5)
 
     def put_user_info(self, nick, info):
         end_chat_sel = self.chat_buffer.get_end_iter()
-        self.chat_buffer.insert_with_tags(end_chat_sel, "Nick = > %s | Host => %s \n" %(nick, info), self.join_left_cmd_tag, self.bold)
+        self.chat_buffer.insert_with_tags(end_chat_sel, "\n-- Nick = > %s | Host => %s --\n" %(nick, info), self.join_left_cmd_tag, self.bold)
+        self.scroll_to_mark(self.chat_buffer.get_insert(), 0.0, True, 0.5, 0.5)
 
     def barnamy_welcome(self):
         end_chat_sel = self.chat_buffer.get_end_iter()
-        self.chat_buffer.insert(end_chat_sel, "   BBBBBBBBBBBBBBBBB\n")
-        self.chat_buffer.insert(end_chat_sel, "   B::::::::::::::::B \n")
-        self.chat_buffer.insert(end_chat_sel, "   B::::::BBBBBB:::::B\n")
-        self.chat_buffer.insert(end_chat_sel, "   BB:::::B     B:::::B \n")
-        self.chat_buffer.insert(end_chat_sel, "     B::::B     B:::::B  aaaaaaaaaaaaa  rrrrr   rrrrrrrrr   nnnn  nnnnnnnn      aaaaaaaaaaaaa      mmmmmmm    mmmmmmm yyyyyyy           yyyyyyy\n")
-        self.chat_buffer.insert(end_chat_sel, "     B::::B     B:::::B  a::::::::::::a r::::rrr:::::::::r  n:::nn::::::::nn  a::::::::::::a   mm:::::::m  m:::::::mmy:::::y           y:::::y \n")
-        self.chat_buffer.insert(end_chat_sel, "     B::::BBBBBB:::::B   aaaaaaaaa:::::ar:::::::::::::::::r n::::::::::::::nn   aaaaaaaaa:::::a m::::::::::mm::::::::::my:::::y       y:::::y \n")
-        self.chat_buffer.insert(end_chat_sel, "     B:::::::::::::BB             a::::arr::::::rrrrr::::::rnn:::::::::::::::n           a::::a m::::::::::::::::::::::m y:::::y     y:::::y\n")
-        self.chat_buffer.insert(end_chat_sel, "     B::::BBBBBB:::::B     aaaaaaa:::::a r:::::r     r:::::r  n:::::nnnn:::::n    aaaaaaa:::::a m:::::mmm::::::mmm:::::m  y:::::y   y:::::y\n")
-        self.chat_buffer.insert(end_chat_sel, "     B::::B     B:::::B  aa::::::::::::a r:::::r     rrrrrrr  n::::n    n::::n  aa::::::::::::a m::::m   m::::m   m::::m   y:::::y y:::::y\n")
-        self.chat_buffer.insert(end_chat_sel, "     B::::B     B:::::B a::::aaaa::::::a r:::::r              n::::n    n::::n a::::aaaa::::::a m::::m   m::::m   m::::m    y:::::y:::::y \n")
-        self.chat_buffer.insert(end_chat_sel, "     B::::B     B:::::Ba::::a    a:::::a r:::::r              n::::n    n::::na::::a    a:::::a m::::m   m::::m   m::::m     y:::::::::y  \n")
-        self.chat_buffer.insert(end_chat_sel, "   BB:::::BBBBBB::::::Ba::::a    a:::::a r:::::r              n::::n    n::::na::::a    a:::::a m::::m   m::::m   m::::m      y:::::::y \n")
-        self.chat_buffer.insert(end_chat_sel, "   B:::::::::::::::::B a:::::aaaa::::::a r:::::r              n::::n    n::::na:::::aaaa::::::a m::::m   m::::m   m::::m       y:::::y \n")
-        self.chat_buffer.insert(end_chat_sel, "   B::::::::::::::::B   a::::::::::aa:::ar:::::r              n::::n    n::::n a::::::::::aa:::am::::m   m::::m   m::::m      y:::::y \n")
-        self.chat_buffer.insert(end_chat_sel, "   BBBBBBBBBBBBBBBBB     aaaaaaaaaa  aaaarrrrrrr              nnnnnn    nnnnnn  aaaaaaaaaa  aaaammmmmm   mmmmmm   mmmmmm     y:::::y \n")
-        self.chat_buffer.insert(end_chat_sel, "                                                                                                                            y:::::y \n")
-        self.chat_buffer.insert(end_chat_sel, "                                                                                                                           y:::::y\n")
-        self.chat_buffer.insert(end_chat_sel, "                                                                                                                          y:::::y\n")
-        self.chat_buffer.insert(end_chat_sel, "                                                                                                                         y:::::y\n")
-        self.chat_buffer.insert(end_chat_sel, "                                                                                                                        yyyyyyy\n")
-        self.chat_buffer.insert(end_chat_sel, "\n")
-        self.chat_buffer.insert(end_chat_sel, "\n")
+        barnamy_welcome = "-- Welcome to Barnamy world, please enjoy and do not cross your limit :-) --\n"
+        barnamy_welcome = self.emoticons_filter(barnamy_welcome)
+        self.chat_buffer.insert(end_chat_sel, barnamy_welcome)
+        self.scroll_to_mark(self.chat_buffer.get_insert(), 0.0, True, 0.5, 0.5)
+
+    def put_barnamy_quote(self, quote):
+        end_chat_sel = self.chat_buffer.get_end_iter()
+        self.chat_buffer.insert_with_tags(end_chat_sel, "\n[%s] said: [%s]\n"%(quote.keys()[0], quote[quote.keys()[0]]), self.join_left_cmd_tag, self.bold)
+        self.scroll_to_mark(self.chat_buffer.get_insert(), 0.0, True, 0.5, 0.5)
 
     def unicode_emoticons_list(self, emoticon):
         if emoticon == ":-)":

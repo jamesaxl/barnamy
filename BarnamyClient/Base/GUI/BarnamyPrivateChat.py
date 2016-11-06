@@ -24,6 +24,7 @@ class BarnamyPrivateChat(Gtk.ApplicationWindow):
         Gtk.Window.__init__(self) 
         self.users_tab = Gtk.Notebook()
         self.add(self.users_tab)
+        self.resize(800, 600)
         self.connect('delete-event', self.hide_private_chat)
         self.connect('focus-in-event', self.lost_hint)
 

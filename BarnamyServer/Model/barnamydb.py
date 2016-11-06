@@ -236,6 +236,21 @@ class Barnamydb(object):
             except Exception:
                 return False
 
+    def check_admin(self, nick):
+        if DB_ENGINE['type'] == 'mongodb':
+            try:
+                user = DB_ENGINE['user'].objects(nick = nick)
+                return user[0].admin
+            except Exception:
+                return False
+
+        elif DB_ENGINE['type'] == 'sqlite' or DB_ENGINE['type'] == 'mariadb' or DB_ENGINE['type'] == 'postgresql':
+            try:
+                user = session.query(DB_ENGINE['user']).filter(DB_ENGINE['user'].nick == nick).one()
+                return user.admin
+            except Exception:
+                return False
+
     def allow_user(self, nick):
         if DB_ENGINE['type'] == 'mongodb':
             try:

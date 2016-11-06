@@ -17,6 +17,7 @@ class User(Document):
     email = StringField(max_length=30, required=True, unique=True)
     date_register = DateTimeField(default=datetime.datetime.now)
     active = BooleanField(default = False)
+    admin = BooleanField(default = True)
 
 class BernamyLog(Document):
     

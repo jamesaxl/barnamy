@@ -9,7 +9,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gio
-
+from twisted.internet import reactor
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 from BarnamySettingsGui import BarnamySettingsGui
@@ -17,6 +17,7 @@ from BarnamyNewUser import BarnamyNewUser
 from BarnamyChatViewer import BarnamyChatViewer
 from BarnamyUserList import BarnamyUserList
 from BarnamyDialogWarning import BarnamyDialogAbout
+from BarnamyPasteBinGui import BarnamyPasteBinGui
 import re
 
 class BarnamyChatWindow(Gtk.ApplicationWindow):
@@ -63,6 +64,7 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
         user_list_scrollbar.add(self.barnamy_user_list)
         user_list_scrollbar.set_shadow_type(Gtk.ShadowType.IN)
         self.banramy_text_chat_enter.connect('key-press-event', self.send_msg)
+        self.banramy_text_chat_enter.connect('focus-out-event', self.focus_to_entry)
 
         main_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         main_chat_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
@@ -81,6 +83,7 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
         entry_box.pack_start(self.banramy_text_chat_enter, True, True, 0)
 
         self.settings_ins = BarnamySettingsGui(self.BarnamyBase)
+        self.barnamy_paste_bin_ins = BarnamyPasteBinGui(self.BarnamyBase, self.banramy_text_chat_enter)
         self.barnamy_new_user_ins = BarnamyNewUser(self)
 
         barnamy_login_button_menu.set_menu_model(menumodel)
@@ -107,6 +110,9 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
         self.login_win = login_win
         self.barnamy_chat_win_state = False
 
+    def focus_to_entry(self, widget, even):
+        widget.grab_focus()
+
     def search_user_to_change_status(self, p_user, status):
 
         for users in self.barnamy_user_list.user_liststore:
@@ -124,44 +130,85 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
                     self.BarnamyBase.barnamy_status['online'](data)
 
     def send_msg(self, widget, event):
-        if event.keyval == 65293:
+        #need to be implemented
+        if event.keyval == 65362:
+            pass
+
+        #need to be implemented
+        elif event.keyval == 65364:
+            pass
+
+        elif event.keyval == 65293:
             widget.emit_stop_by_name("key-press-event")
             msg = widget.get_text()
             widget.set_text('')
+            
             if msg:
+                self.BarnamyBase.set_msg_sent(msg)
                 if msg.startswith('/'):
                     if msg == '/help':
                         self.barnamy_text_chat_view.put_help_(self.BarnamyBase.barnamy_cmd)
+                    elif msg == '/flkg':
+                        self.BarnamyBase.barnamy_sound_setting['play_false_king_theme']()
+                    elif msg == '/pastebin':
+                        self.barnamy_paste_bin_ins.show_all()
+                    elif msg == '/stop_flkg':
+                        self.BarnamyBase.barnamy_sound_setting['stop_false_king_theme']()
                     elif msg == '/run_srv':
                         self.BarnamyBase.barnamy_actions['start_web_server']()
                     elif msg == '/stop_srv':
                         self.BarnamyBase.barnamy_actions['stop_web_server']()
                     elif msg == '/away':
                         self.search_user_to_change_status(self.BarnamyBase.nick, "Away")
-                        data = {'type':'status', 'nick':self.BarnamyBase.nick, 'status':'Away', 'token_id':self.BarnamyBase.token_id}
+                        data = {'type':'status', 'nick':self.BarnamyBase.nick, 'status':'Away', 
+                                'token_id':self.BarnamyBase.token_id}
                         self.BarnamyBase.barnamy_status['away'](data)
                     elif msg == '/online':
                         self.search_user_to_change_status(self.BarnamyBase.nick, "Online")
-                        data = {'type':'status', 'nick':self.BarnamyBase.nick, 'status':'Online', 'token_id':self.BarnamyBase.token_id}
+                        data = {'type':'status', 'nick':self.BarnamyBase.nick, 'status':'Online', 
+                                'token_id':self.BarnamyBase.token_id}
                         self.BarnamyBase.barnamy_status['away'](data)
-                    elif len(msg.split(' ')) == 2 and msg.split(' ')[0] in  self.BarnamyBase.barnamy_cmd:
-                        if msg.startswith('/admin') and msg.split(' ')[1]:
-                            print msg.split(' ')[1]
-                        elif msg.startswith('/ignore') and msg.split(' ')[1]:
-                            self.BarnamyBase.barnamy_actions['ignore_user'](msg.split(' ')[1])
-                        elif msg.startswith('/unignore') and msg.split(' ')[1]:
-                            self.BarnamyBase.barnamy_actions['unignore_user'](msg.split(' ')[1])
-                        elif msg.startswith('/allow') and msg.split(' ')[1]:
-                            self.BarnamyBase.barnamy_actions['accept_share'](msg.split(' ')[1])
-                        elif msg.startswith('/admin') and msg.split(' ')[1]:
-                            data = {"type":"admin", "nick":self.BarnamyBase.nick, "token_id":self.BarnamyBase.token_id, "msg":msg.split(' ')[1]}
-                            self.BarnamyBase.barnamy_actions['send_pub_msg'](data)
-                        elif msg.startswith('/info') and msg.split(' ')[1]:
-                            self.BarnamyBase.barnamy_actions['get_info'](msg.split(' ')[1])
+                    elif msg == '/quote':
+                        self.barnamy_text_chat_view.put_barnamy_quote(self.BarnamyBase.barnamy_actions['call_quote']())
+                    elif msg.startswith('/ignore') and len(msg.split(' ')[1:]) == 1:
+                        self.BarnamyBase.barnamy_actions['ignore_user'](msg.split(' ')[1])
+                    elif msg.startswith('/unignore') and len(msg.split(' ')[1:]) == 1:
+                        self.BarnamyBase.barnamy_actions['unignore_user'](msg.split(' ')[1])
+                    elif msg.startswith('/allow') and len(msg.split(' ')[1:]) == 1:
+                        self.BarnamyBase.barnamy_actions['accept_share'](msg.split(' ')[1])
+                    elif msg.startswith('/admin') and len(msg.split(' ')[1:]) >= 1:
+                        data = {"type":"admin", "nick":self.BarnamyBase.nick, 
+                                "token_id":self.BarnamyBase.token_id, 
+                                "msg":msg.split(' ')[1]}
+                        self.BarnamyBase.barnamy_actions['send_pub_msg'](data)
+                    elif msg.startswith('/info') and len(msg.split(' ')[1:]) == 1:
+                        self.BarnamyBase.barnamy_actions['get_info'](msg.split(' ')[1])
+                    elif msg.startswith('/kick') and len(msg.split(' ')[1:]) == 1:
+                        data = {'type':'kick', 'from_' : self.BarnamyBase.nick, 'nick' : msg.split(' ')[1],
+                                'token_id':self.BarnamyBase.token_id}
+                        self.BarnamyBase.barnamy_actions['kick_user'](data)
+
+                    #prvmsg command needs a rewrite
+                    elif msg.startswith('/prvmsg'):
+                        delay = msg.split(' ', 2)[1]
+                        users_msgs = msg.split(' ', 2)[2]
+
+                        if users_msgs:
+                            for user_msg in users_msgs.split(','):
+                                nick = user_msg.split(':')[0]
+                                prv_msg = user_msg.split(':')[1]
+                                if nick in self.barnamy_user_list.user_liststore[0]:
+                                    data = {'type' : 'private', 'to_' : nick , 'from_' : self.BarnamyBase.nick,
+                                        'token_id' : self.BarnamyBase.token_id, 'msg' : prv_msg.strip()}
+                                    self.BarnamyBase.barnamy_actions['prv_msg_cmd'](delay, data)
+
+                    else:
+                        self.barnamy_text_chat_view.put_help_(self.BarnamyBase.barnamy_cmd)
                     return
 
                 self.barnamy_text_chat_view.put_msg_(self.BarnamyBase.nick, msg)
-                data = {'type' : 'public', 'nick' : self.BarnamyBase.nick, 'token_id' : self.BarnamyBase.token_id, 'msg' : msg}
+                data = {'type' : 'public', 'nick' : self.BarnamyBase.nick, 
+                        'token_id' : self.BarnamyBase.token_id, 'msg' : msg}
                 self.BarnamyBase.barnamy_actions['send_pub_msg'](data)
                 return
 

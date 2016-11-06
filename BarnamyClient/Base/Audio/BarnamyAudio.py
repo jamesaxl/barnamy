@@ -18,12 +18,21 @@ class BarnamyAudio(object):
     def __init__(self):
         Gst.init_check(None)
         self.IS_GST010 = Gst.version()[0] == 0
-        self.player = Gst.ElementFactory.make('playbin', None)
+        self.player = Gst.ElementFactory.make('playbin', "player")
     
     def _play_file(self, file_s):
         self.player.set_state(Gst.State.NULL)
         self.player.set_property('uri', file_s)
         self.player.set_state(Gst.State.PLAYING)
+        self.player.set_property('volume', 0.2)
+
+    def _stop_file(self):
+        self.player.set_state(Gst.State.READY)
+        return False
+
+    def play_false_king_theme(self):
+        self._play_file('file://'+os.path.abspath('Sound/FalseKing/Two Steps From Hell - False King.ogg'))
+        return True
 
     def login_sound(self):
         self._play_file('file://'+os.path.abspath('Sound/service-login.ogg'))
@@ -39,3 +48,4 @@ class BarnamyAudio(object):
     
     def access_folder_sound(self):
         self._play_file('file://'+os.path.abspath('Sound/folder_access.ogg'))
+

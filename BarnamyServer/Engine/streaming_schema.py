@@ -12,8 +12,8 @@ class BarnamyServerSchema(object):
     
     def __init__(self):
         self.login_schema = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'login'),
-                                       'nick': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
-                                       'passwd':And(str, lambda n: 7 <= len(n) )})
+                                       'nick': And(str),
+                                       'passwd':And(str)})
         self.register_schema = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'register'),
                                        'nick': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
                                        'passwd':And(str, lambda n: 7 <= len(n) ), 'email':And(str, Use(str.lower))})
@@ -50,11 +50,15 @@ class BarnamyServerSchema(object):
         self.unignore_user = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'unignore'),
                                        'nick': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
                                        'token_id':And(str)})
-                                       
+
         self.info_user = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'info'),
                                        'from_': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
                                        'nick': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
                                        'token_id':And(str)})
+
+        self.kick_user = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'kick'),
+                                       'from_' : And(str, Use(str)), 'nick': And(str, Use(str)), 
+                                       'token_id' : And(str)})
 
         self.sync_between_srv = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'sync'),
                                        'addr': And(str),
@@ -73,7 +77,14 @@ class BarnamyServerSchema(object):
             return True
         except Exception:
             return False
-    
+
+    def kick_user_f(self, data):
+        try:
+            data = self.kick_user.validate(data)
+            return True
+        except Exception:
+            return False
+
     def login_schema_f(self, data):
         try:
             data = self.login_schema.validate(data)

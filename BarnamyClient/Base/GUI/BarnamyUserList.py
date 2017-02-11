@@ -43,7 +43,6 @@ class BarnamyUserList(Gtk.TreeView):
         self.menu.append(fldr_access)
         prv_chat.show()
         fldr_access.show()
-        
 
     def on_selected_user_change(self, tree_selection):
         (model, pathlist) = tree_selection.get_selected_rows()
@@ -63,7 +62,7 @@ class BarnamyUserList(Gtk.TreeView):
         self.private_chat(self.selected_user)
 
     def on_fldr_access_clicked(self, widget):
-        data = {'type':'folder', 'from_':self.BarnamyBase.nick, 'to_':self.selected_user, 'token_id':self.BarnamyBase.token_id}
+        data = {'type':'folder', 'from_':self.BarnamyBase.nick[0], 'to_':self.selected_user, 'token_id':self.BarnamyBase.token_id[0]}
         self.BarnamyBase.barnamy_actions['ask_for_folder_access'](data)
 
     def private_chat(self, nick):
@@ -72,8 +71,8 @@ class BarnamyUserList(Gtk.TreeView):
         USERS_CHAT[nick] = {'chat_private_view' : BarnamyChatViewer(), 
                                 'entry_text' : Gtk.Entry()}
         USERS_CHAT[nick]['chat_private_view'].users_tag[nick] = USERS_CHAT[nick]['chat_private_view'].radom_color(nick)
-        if not self.BarnamyBase.nick in USERS_CHAT[nick]['chat_private_view'].users_tag:
-            USERS_CHAT[nick]['chat_private_view'].users_tag[self.BarnamyBase.nick] = USERS_CHAT[nick]['chat_private_view'].chat_buffer.create_tag("user_color", foreground="#0000FF")
+        if not self.BarnamyBase.nick[0] in USERS_CHAT[nick]['chat_private_view'].users_tag:
+            USERS_CHAT[nick]['chat_private_view'].users_tag[self.BarnamyBase.nick[0]] = USERS_CHAT[nick]['chat_private_view'].chat_buffer.create_tag("user_color", foreground="#0000FF")
         chat_view_scrollbar = Gtk.ScrolledWindow()
         chat_view_scrollbar.add(USERS_CHAT[nick]['chat_private_view'])
         main_chat_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=7)
@@ -108,10 +107,10 @@ class BarnamyUserList(Gtk.TreeView):
             msg = widget.get_text()
             widget.set_text('')
             nick = self.selected_prv_chat
-            USERS_CHAT[nick]['chat_private_view'].put_msg_(self.BarnamyBase.nick, msg)
+            USERS_CHAT[nick]['chat_private_view'].put_msg_(self.BarnamyBase.nick[0], msg)
          
-            data = {'type' : 'private', 'to_' : nick, 'from_' : self.BarnamyBase.nick, 
-            'token_id' : self.BarnamyBase.token_id, 'msg' : msg}
+            data = {'type' : 'private', 'to_' : nick, 'from_' : self.BarnamyBase.nick[0], 
+            'token_id' : self.BarnamyBase.token_id[0], 'msg' : msg}
             self.BarnamyBase.barnamy_actions['send_prv_msg'](data)
 
     def recv_prv_msg(self, data):
@@ -139,7 +138,7 @@ class BarnamyUserList(Gtk.TreeView):
     def get_user_win_prv_title(self, notebook, page, page_num):
         self.selected_prv_chat = notebook.get_tab_label(page).get_children()
         self.selected_prv_chat = self.selected_prv_chat[0].get_text()
-        self.barnamy_private_win.set_title("CONNECTED AS [%s] ### PRIVATE CHAT WITH [%s]" %(self.BarnamyBase.nick, self.selected_prv_chat))
+        self.barnamy_private_win.set_title("CONNECTED AS [%s] ### PRIVATE CHAT WITH [%s]" %(self.BarnamyBase.nick[0], self.selected_prv_chat))
 
     def on_user_list_button_press_event(self, treeview, event):
         if event.button == 3:

@@ -104,6 +104,9 @@ class BarnamyLogin(Gtk.ApplicationWindow):
         self.barnamy_chat_window_ins = None
         self.barnamy_login_win_state = False
 
+    def get_ins(self):
+        return self
+
     def recv_status_before_login(self, data):
         context_id = self.statusbar.get_context_id("barnamy")
         message_id = self.statusbar.push(context_id, data["status"])
@@ -127,7 +130,8 @@ class BarnamyLogin(Gtk.ApplicationWindow):
 
 
     def recv_login_users(self, data):
-        self.barnamy_chat_window_ins = BarnamyChatWindow(self.BarnamyBase, self)
+        if not self.barnamy_chat_window_ins:
+            self.barnamy_chat_window_ins = BarnamyChatWindow(self.BarnamyBase, self)
         self.hide()
         for user in data['user_list']:
             if user != data['nick']:
@@ -151,3 +155,8 @@ class BarnamyLogin(Gtk.ApplicationWindow):
 
     def stop(self, widget = 0):
         reactor.stop()
+
+
+    def status_connect_faild(self):
+        context_id = self.statusbar.get_context_id("barnamy")
+        message_id = self.statusbar.push(context_id, "connection lost: verifier your settings")

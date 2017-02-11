@@ -26,17 +26,17 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
         if Base:
             self.BarnamyBase = Base
 
-        Gtk.Window.__init__(self, title="Barnamy World for the love of community [%s]" %self.BarnamyBase.nick)        
+        Gtk.Window.__init__(self, title="Barnamy World for the love of community [%s]" %self.BarnamyBase.nick[0])        
         self.connect("delete-event", Gtk.main_quit)
         self.connect("delete-event", self.barnamy_close)
         self.connect('focus-in-event', self.lost_hint)
 
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
-        hb.props.title = "Barnamy World - For the love of community [%s]" %self.BarnamyBase.nick
+        hb.props.title = "Barnamy World - For the love of community [%s]" %self.BarnamyBase.nick[0]
         self.set_titlebar(hb)
         self.set_icon(login_win.barnamy_pixbuf)
-        self.bt_nick = Gtk.Button(self.BarnamyBase.nick)
+        self.bt_nick = Gtk.Button(self.BarnamyBase.nick[0])
         self.statusbar = Gtk.Statusbar()
 
         chat_view_scrollbar = Gtk.ScrolledWindow()
@@ -123,26 +123,24 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
     def send_status_to_new_user(self, my_nick, nick):
         for users in self.barnamy_user_list.user_liststore:
             if users[0] == my_nick:
-                data = {'type':'status', 'nick':my_nick, 'status':users[1], 'token_id':self.BarnamyBase.token_id}
+                data = {'type':'status', 'nick':my_nick, 'status':users[1], 'token_id':self.BarnamyBase.token_id[0]}
                 if users[1] == 'Away':
                     self.BarnamyBase.barnamy_status['away'](data)
                 else:
                     self.BarnamyBase.barnamy_status['online'](data)
 
     def send_msg(self, widget, event):
-        #need to be implemented
         if event.keyval == 65362:
-            pass
+            self.banramy_text_chat_enter.set_text(self.BarnamyBase.get_msg_sent_up())
 
-        #need to be implemented
         elif event.keyval == 65364:
-            pass
+            self.banramy_text_chat_enter.set_text(self.BarnamyBase.get_msg_sent_down())
 
         elif event.keyval == 65293:
             widget.emit_stop_by_name("key-press-event")
             msg = widget.get_text()
             widget.set_text('')
-            
+
             if msg:
                 self.BarnamyBase.set_msg_sent(msg)
                 if msg.startswith('/'):
@@ -159,14 +157,14 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
                     elif msg == '/stop_srv':
                         self.BarnamyBase.barnamy_actions['stop_web_server']()
                     elif msg == '/away':
-                        self.search_user_to_change_status(self.BarnamyBase.nick, "Away")
-                        data = {'type':'status', 'nick':self.BarnamyBase.nick, 'status':'Away', 
-                                'token_id':self.BarnamyBase.token_id}
+                        self.search_user_to_change_status(self.BarnamyBase.nick[0], "Away")
+                        data = {'type':'status', 'nick':self.BarnamyBase.nick[0], 'status':'Away', 
+                                'token_id':self.BarnamyBase.token_id[0]}
                         self.BarnamyBase.barnamy_status['away'](data)
                     elif msg == '/online':
-                        self.search_user_to_change_status(self.BarnamyBase.nick, "Online")
-                        data = {'type':'status', 'nick':self.BarnamyBase.nick, 'status':'Online', 
-                                'token_id':self.BarnamyBase.token_id}
+                        self.search_user_to_change_status(self.BarnamyBase.nick[0], "Online")
+                        data = {'type':'status', 'nick':self.BarnamyBase.nick[0], 'status':'Online', 
+                                'token_id':self.BarnamyBase.token_id[0]}
                         self.BarnamyBase.barnamy_status['away'](data)
                     elif msg == '/quote':
                         self.barnamy_text_chat_view.put_barnamy_quote(self.BarnamyBase.barnamy_actions['call_quote']())
@@ -177,15 +175,15 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
                     elif msg.startswith('/allow') and len(msg.split(' ')[1:]) == 1:
                         self.BarnamyBase.barnamy_actions['accept_share'](msg.split(' ')[1])
                     elif msg.startswith('/admin') and len(msg.split(' ')[1:]) >= 1:
-                        data = {"type":"admin", "nick":self.BarnamyBase.nick, 
-                                "token_id":self.BarnamyBase.token_id, 
+                        data = {"type":"admin", "nick":self.BarnamyBase.nick[0], 
+                                "token_id":self.BarnamyBase.token_id[0], 
                                 "msg":msg.split(' ')[1]}
                         self.BarnamyBase.barnamy_actions['send_pub_msg'](data)
                     elif msg.startswith('/info') and len(msg.split(' ')[1:]) == 1:
                         self.BarnamyBase.barnamy_actions['get_info'](msg.split(' ')[1])
                     elif msg.startswith('/kick') and len(msg.split(' ')[1:]) == 1:
-                        data = {'type':'kick', 'from_' : self.BarnamyBase.nick, 'nick' : msg.split(' ')[1],
-                                'token_id':self.BarnamyBase.token_id}
+                        data = {'type':'kick', 'from_' : self.BarnamyBase.nick[0], 'nick' : msg.split(' ')[1],
+                                'token_id':self.BarnamyBase.token_id[0]}
                         self.BarnamyBase.barnamy_actions['kick_user'](data)
 
                     #prvmsg command needs a rewrite
@@ -198,24 +196,24 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
                                 nick = user_msg.split(':')[0]
                                 prv_msg = user_msg.split(':')[1]
                                 if nick in self.barnamy_user_list.user_liststore[0]:
-                                    data = {'type' : 'private', 'to_' : nick , 'from_' : self.BarnamyBase.nick,
-                                        'token_id' : self.BarnamyBase.token_id, 'msg' : prv_msg.strip()}
+                                    data = {'type' : 'private', 'to_' : nick , 'from_' : self.BarnamyBase.nick[0],
+                                        'token_id' : self.BarnamyBase.token_id[0], 'msg' : prv_msg.strip()}
                                     self.BarnamyBase.barnamy_actions['prv_msg_cmd'](delay, data)
 
                     else:
                         self.barnamy_text_chat_view.put_help_(self.BarnamyBase.barnamy_cmd)
                     return
 
-                self.barnamy_text_chat_view.put_msg_(self.BarnamyBase.nick, msg)
-                data = {'type' : 'public', 'nick' : self.BarnamyBase.nick, 
-                        'token_id' : self.BarnamyBase.token_id, 'msg' : msg}
+                self.barnamy_text_chat_view.put_msg_(self.BarnamyBase.nick[0], msg)
+                data = {'type' : 'public', 'nick' : self.BarnamyBase.nick[0], 
+                        'token_id' : self.BarnamyBase.token_id[0], 'msg' : msg}
                 self.BarnamyBase.barnamy_actions['send_pub_msg'](data)
                 return
 
     def recv_user_join_left(self, data):
         self.barnamy_user_list.update_users_list(data['user'])
         if data['user'] in data['user_list']:
-            self.send_status_to_new_user(self.BarnamyBase.nick, data['user'])
+            self.send_status_to_new_user(self.BarnamyBase.nick[0], data['user'])
 
             if not data['user'] in self.barnamy_text_chat_view.users_tag:
                 self.barnamy_text_chat_view.users_tag[data['user']] = self.barnamy_text_chat_view.radom_color(data['user'])
@@ -223,7 +221,7 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
         self.barnamy_text_chat_view.recv_left_joing(data['user_join_left'])
 
     def recv_public_msg(self, data):
-        user_in_msg = re.match("\w*\s*(%s)\w*\s*"%self.BarnamyBase.nick, data['msg'])
+        user_in_msg = re.match("\w*\s*(%s)\w*\s*"%self.BarnamyBase.nick[0], data['msg'])
         if user_in_msg:
             self.set_urgency_hint(True)
             self.barnamy_text_chat_view.rcev_msg_highlight(data['from_'], data['msg'])
@@ -249,7 +247,7 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
         BarnamyDialogAbout(self).run()
 
     def barnamy_close(self, widget, event):
-        data = {'type' : 'logout', 'nick' : self.BarnamyBase.nick, 'token_id' : self.BarnamyBase.token_id}
+        data = {'type' : 'logout', 'nick' : self.BarnamyBase.nick[0], 'token_id' : self.BarnamyBase.token_id[0]}
         self.BarnamyBase.barnamy_actions['do_logout'](data)
         self.barnamy_text_chat_view.chat_buffer.set_text('')
         self.banramy_text_chat_enter.set_text('')
@@ -257,6 +255,7 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
         self.login_win.show_all()
         self.barnamy_chat_win_state = False
         self.BarnamyBase.barnamy_actions['stop_web_server']()
+        self.barnamy_user_list.user_liststore.clear()
         barnamy_tag_table = self.barnamy_text_chat_view.chat_buffer.get_tag_table()
         for user in self.barnamy_text_chat_view.users_tag:
             tag = barnamy_tag_table.lookup(user)
@@ -267,11 +266,19 @@ class BarnamyChatWindow(Gtk.ApplicationWindow):
         self.barnamy_chat_win_state = True    
         self.show_all()
         context_id = self.statusbar.get_context_id("barnamy")
-        message_id = self.statusbar.push(context_id, 'connected to barnamy as %s'%self.BarnamyBase.nick)
+        message_id = self.statusbar.push(context_id, 'connected to barnamy as %s'%self.BarnamyBase.nick[0])
         self.banramy_text_chat_enter.grab_focus()
         self.barnamy_text_chat_view.barnamy_welcome()
-        self.barnamy_text_chat_view.users_tag[self.BarnamyBase.nick] = self.barnamy_text_chat_view.chat_buffer.create_tag("user_color", foreground="#0000FF")
+        if not self.BarnamyBase.nick[0] in self.barnamy_text_chat_view.users_tag:
+            self.barnamy_text_chat_view.users_tag[self.BarnamyBase.nick[0]] = self.barnamy_text_chat_view.chat_buffer.create_tag("user_color", foreground="#0000FF")
+
+    def status_recconnect(self):
+        context_id = self.statusbar.get_context_id("barnamy")
+        message_id = self.statusbar.push(context_id, "connected to barnamy as: %s", self.BarnamyBase.nick[0])
+
+    def status_connect_faild(self):
+        context_id = self.statusbar.get_context_id("barnamy")
+        message_id = self.statusbar.push(context_id, "connection lost: verifier your settings")
 
     def barnamy_settings(self, action, parameter):
         self.settings_ins.barnamy_settings_open()
-

@@ -79,10 +79,11 @@ class Barnamydb(object):
             user.nick = nick
             user.email = email
             user.passwd = self.make_hash_password(passwd)
+            user.token_id = nick
             user.save()
             return True
         elif DB_ENGINE['type'] == 'sqlite' or DB_ENGINE['type'] == 'mariadb' or DB_ENGINE['type'] == 'postgresql':
-            new_person = DB_ENGINE['user'](nick=nick, email = email, passwd=self.make_hash_password(passwd))
+            new_person = DB_ENGINE['user'](nick=nick, email = email, passwd=self.make_hash_password(passwd), token_id=nick)
             session.add(new_person)
             session.commit()
             return True
@@ -101,11 +102,12 @@ class Barnamydb(object):
             user.nick = nick
             user.email = email
             user.passwd = self.make_hash_password(passwd)
+            user.token_id = nick
             user.active = True
             user.save()
             return True
         elif DB_ENGINE['type'] == 'sqlite' or DB_ENGINE['type'] == 'mariadb' or DB_ENGINE['type'] == 'postgresql':
-            new_person = DB_ENGINE['user'](nick=nick, email = email, passwd=self.make_hash_password(passwd), active = True)
+            new_person = DB_ENGINE['user'](nick=nick, email = email, passwd=self.make_hash_password(passwd), token_id=nick,active = True)
             session.add(new_person)
             session.commit()
             return True
@@ -149,6 +151,46 @@ class Barnamydb(object):
             try:
                 user = session.query(DB_ENGINE['user']).filter(DB_ENGINE['user'].email == email).one()
                 if  user.email: return True
+            except Exception:
+                return False
+
+    def save_token_id(self, nick, token_id):
+        if DB_ENGINE['type'] == 'mongodb':
+            try:
+                user = DB_ENGINE['user'].objects(nick = nick)
+                user.update(**{
+                    "set__token_id": token_id
+                    })
+                return True
+            except Exception:
+                return False
+
+        elif DB_ENGINE['type'] == 'sqlite' or DB_ENGINE['type'] == 'mariadb' or DB_ENGINE['type'] == 'postgresql':
+            try:
+                user = session.query(DB_ENGINE['user']).filter(DB_ENGINE['user'].nick == nick).one()
+                if  user.nick:
+                    user.token_id = token_id
+                    session.commit()
+                    return True
+            except Exception:
+                return False
+
+    def check_token_id(self, nick, token_id):
+        if DB_ENGINE['type'] == 'mongodb':
+            try:
+                user = DB_ENGINE['user'].objects(token_id = token_id)
+                if user[0].token_id != token_id: return False
+                if not user[0].active: return False
+                return True
+            except Exception:
+                return False
+
+        elif DB_ENGINE['type'] == 'sqlite' or DB_ENGINE['type'] == 'mariadb' or DB_ENGINE['type'] == 'postgresql':
+            try:
+                user = session.query(DB_ENGINE['user']).filter(DB_ENGINE['user'].token_id == token_id).one()
+                if user.token_id != token_id: return False
+                if not user.active: return False
+                return True
             except Exception:
                 return False
 

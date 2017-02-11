@@ -14,6 +14,10 @@ class BarnamyServerSchema(object):
         self.login_schema = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'login'),
                                        'nick': And(str),
                                        'passwd':And(str)})
+        self.check_token_id_schema = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'check_token_id'),
+                                       'nick': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
+                                       'token_id':And(str)})
+
         self.register_schema = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'register'),
                                        'nick': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
                                        'passwd':And(str, lambda n: 7 <= len(n) ), 'email':And(str, Use(str.lower))})
@@ -88,6 +92,13 @@ class BarnamyServerSchema(object):
     def login_schema_f(self, data):
         try:
             data = self.login_schema.validate(data)
+            return True
+        except Exception:
+            return False
+
+    def check_token_id_schema_f(self, data):
+        try:
+            data = self.check_token_id_schema.validate(data)
             return True
         except Exception:
             return False

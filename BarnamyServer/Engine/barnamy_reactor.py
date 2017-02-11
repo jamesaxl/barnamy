@@ -58,6 +58,8 @@ class BarnamyProtocol(LineReceiver):
         if self.token_id == None:
             if self.schema.login_schema_f(data):
                 self.handle_LOGIN(data, log)
+            elif self.schema.check_token_id_schema_f(data):
+                self.handle_LOGIN_TOKEN_id(data, log)
             elif self.schema.register_schema_f(data) :
                 self.handle_REGISTER( data, log)
             else:
@@ -87,6 +89,8 @@ class BarnamyProtocol(LineReceiver):
                 self.handle_KICK_USER(data, log)
             elif self.schema.sync_between_srv_f(data):
                 pass
+            elif self.schema.check_token_id_schema_f(data):
+                self.handle_LOGIN_TOKEN_id(data, log)
             else:
                 self.sendLine(self.packer.pack(self.schema.error))
 
@@ -137,10 +141,29 @@ class BarnamyProtocol(LineReceiver):
             message = "%s has joined the channel" % (self.name,)
 
             self.token_id = uuid.uuid1()
+            user.save_token_id(data["nick"], str(self.token_id))
             self.broadcastMessage(self.packer.pack({"user_join_left":message, "user_list":self.factory.users.keys(), 
                                                     "user" : self.name}))
             self.sendLine(self.packer.pack({"type":"login", "nick":self.name, "token_id":str(self.token_id), 
                                             "user_list":self.factory.users.keys()}))
+            log.msg('LOGIN')
+            bernamylog = Model.barnamydb.Barnamydb()
+            bernamylog.save_log(data, data['nick'], 'LOGIN')
+        else:
+            self.sendLine(self.packer.pack({"type":"err_login", "msg":"check nick and password"}))
+
+    def handle_LOGIN_TOKEN_id(self, data, log):
+        user = Model.barnamydb.Barnamydb()
+        if user.check_token_id(data['nick'], data['token_id']):
+            self.name = data["nick"]
+            self.factory.ignore_users[self.name] = []
+            self.factory.users[data["nick"]] = [self, self.transport.getPeer().host]
+            message = "%s has joined the channel" % (self.name,)
+            self.broadcastMessage(self.packer.pack({"user_join_left":message, "user_list":self.factory.users.keys(), 
+                                                    "user" : self.name}))
+            self.sendLine(self.packer.pack({"type":"check_token_id", "nick":self.name, "token_id":str(self.token_id), 
+                                            "user_list":self.factory.users.keys()}))
+            self.token_id = data['token_id']
             log.msg('LOGIN')
             bernamylog = Model.barnamydb.Barnamydb()
             bernamylog.save_log(data, data['nick'], 'LOGIN')
@@ -157,7 +180,7 @@ class BarnamyProtocol(LineReceiver):
         bernamylog.save_log(data, data['nick'], 'PUBLIC_MSG')
         data = {"type":"public", "from_":data['nick'], "msg":data['msg']}
         self.broadcastMessage(self.packer.pack(data))
-    
+
     def handle_PRVCHAT(self, data, log):
         if data["token_id"] != str(self.token_id):
             self.sendLine(self.packer.pack("Where did you get this Token_id :)."))

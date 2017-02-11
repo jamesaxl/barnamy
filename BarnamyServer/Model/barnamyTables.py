@@ -22,6 +22,7 @@ class User(Base):
     nick = Column(String(20), nullable=False, unique=True)
     passwd = Column(Text, nullable=False)
     email = Column(String(30), nullable=False, unique=True)
+    token_id = Column(String(20), nullable=False, unique=True)
     date_register = Column(DateTime, nullable=False,  default = datetime.datetime.now)
     active = Column(Boolean, nullable=False,  default = False)
     admin = Column(Boolean, nullable=False,  default = False)

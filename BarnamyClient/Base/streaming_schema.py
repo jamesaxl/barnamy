@@ -26,6 +26,9 @@ class  BarnamyClientSchema(object):
         self.login_nok_schema = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'err_login'),
                                        'msg': And(str)})
         
+        self.check_token_id_schema = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'check_token_id'),
+                                       'nick': And(str, Use(str.lower), lambda n: 4 <= len(n) <= 10),
+                                       'token_id':And(str)})
         
         self.register_ok_schema = Schema({'type' : And(str, Use(str.lower), lambda n: n == 'register'),
                                        'succ':And(str)})
@@ -55,6 +58,13 @@ class  BarnamyClientSchema(object):
     def status_schema_f(self, data):
         try:
             data = self.status_ok_schema.validate(data)
+            return True
+        except Exception:
+            return False
+
+    def check_token_id_schema_f(self, data):
+        try:
+            data = self.check_token_id_schema.validate(data)
             return True
         except Exception:
             return False

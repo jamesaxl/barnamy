@@ -23,13 +23,12 @@ if BARNAMY_TLS_DIR:
     reactor.listenSSL(60253, Engine.barnamy_reactor.BarnamyServer(),
                       ssl.DefaultOpenSSLContextFactory(
             BARNAMY_TLS_DIR + '/barnamy.key', BARNAMY_TLS_DIR + '/barnamy.crt'))
-    reactor.listenSSL(8083, server.Site(Engine.barnamy_reactor.BarnamyServer.ServerQuotes()), 
+    reactor.listenSSL(28083, server.Site(Engine.barnamy_reactor.BarnamyServer.ServerQuotes()), 
                       ssl.DefaultOpenSSLContextFactory(BARNAMY_TLS_DIR + '/barnamy.key', BARNAMY_TLS_DIR + '/barnamy.crt'))
 
 else:
 
     reactor.listenTCP(60251, Engine.barnamy_reactor.BarnamyServer())
-    reactor.listenTCP(8081, server.Site(Engine.barnamy_reactor.BarnamyServer.ServerQuotes()))
+    reactor.listenTCP(28081, server.Site(Engine.barnamy_reactor.BarnamyServer.ServerQuotes()))
 
 reactor.run()
-

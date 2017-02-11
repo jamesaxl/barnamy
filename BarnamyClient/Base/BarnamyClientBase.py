@@ -28,7 +28,8 @@ import string
 import json
 import urllib2
 from twisted.internet import reactor
-import ssl 
+import ssl
+
 ssl._create_default_https_context = ssl._create_unverified_context
 
 BARNAMY_HOME = expanduser("~/BarnamyHome")
@@ -36,15 +37,23 @@ BARNAMY_HTTP_PASSWD_FILE = expanduser("~/.barnamy/httpd.password")
 BARNAMY_MINI_WEB_SRV_PID = "/tmp/barnamyminisrv.pid"
 USER = getpass.getuser()
 
+BARNAMY_APP = None
+NICK = [0,]
+TOKEN_ID = [0,]
+
 class BarnamyClient(LineReceiver):
 
     def connectionMade(self):
+        global BARNAMY_APP
+        global NICK
+        global TOKEN_ID
+
         self.packer = msgpack.Packer()
         self.unpacker = msgpack.Unpacker()
         self.schema = BarnamyClientSchema()
         self.barnamy_setting_i = BRS()
-        self.token_id = None
-        self.nick = None
+        self.token_id = TOKEN_ID
+        self.nick = NICK
         self._pid = None
         self.msg_sent_list = []
         self.msg_sent_position = None
@@ -76,20 +85,29 @@ class BarnamyClient(LineReceiver):
                                 'ignore_user': self.ignore_user, 'unignore_user': self.unignore_user, 
                                 'get_info' : self.get_info, 'call_quote' : self.call_quote,
                                 'kick_user' : self.kick_user, 'paste_bin' : self.paste_bin,
-                                'prv_msg_cmd' : self.prv_msg_cmd}
+                                'prv_msg_cmd' : self.prv_msg_cmd, 'check_token_id' : self.check_token_id}
 
         self.barnamy_status = {'online' : self.go_online, 'away' : self.go_away}
         
         self.BarnamyPlayer = Audio.BarnamyAudio.BarnamyAudio()
         self.BarnamyNotify = Notify.BarnamyNotify.BarnamyNotify()
-        self.app = GUI.BarnamyLogin.BarnamyLogin(self)
         self.barnamy_log = BRL(self)
-        self.app.RunBarnamyLogin()
+
+        if BARNAMY_APP != None:
+            BARNAMY_APP.BarnamyBase = self
+            if BARNAMY_APP.barnamy_chat_window_ins:
+                BARNAMY_APP.barnamy_chat_window_ins.BarnamyBase = self
+                data = {'type' : 'check_token_id', 'nick' : NICK[0], 'token_id' : TOKEN_ID[0]}
+                self.check_token_id(data)
+
+            return
+        BARNAMY_APP = GUI.BarnamyLogin.BarnamyLogin(self)
+        BARNAMY_APP.RunBarnamyLogin()
 
     def connectionLost(self, reason):
-        context_id = self.app.statusbar.get_context_id("barnamy")
-        message_id = self.app.statusbar.push(context_id, "connection lost: verifier your settings")
-
+        BARNAMY_APP.status_connect_faild()
+        if BARNAMY_APP.barnamy_chat_window_ins:
+            BARNAMY_APP.barnamy_chat_window_ins.status_connect_faild()
 
     def regiser_new_user(self, data):
         self.sendLine(self.packer.pack(data))
@@ -97,11 +115,14 @@ class BarnamyClient(LineReceiver):
     def do_login(self, data):
         self.sendLine(self.packer.pack(data))
 
+    def check_token_id(self, data):
+        self.sendLine(self.packer.pack(data))
+
     def do_logout(self, data):
         self.sendLine(self.packer.pack(data))
         self.barnamy_sound_setting['logout_sound']()
-        self.nick = None
-        self.token_id = None
+        NICK = [0]
+        TOKEN_ID = [0]
 
     def ask_for_folder_access(self, data):
         self.sendLine(self.packer.pack(data))
@@ -165,7 +186,7 @@ class BarnamyClient(LineReceiver):
 
     def _prv_log(self, data):
         if self.barnamy_setting_i.get_settings()['log']:
-            with_ = data['from_'] if self.nick != data['from_'] else data['to_']
+            with_ = data['from_'] if NICK[0] != data['from_'] else data['to_']
             log = "[%s] <%s> %s" %(strftime("%H:%M:%S"), data['from_'], data['msg'])
             self.barnamy_log.set_prv_log(log, with_)
 
@@ -173,45 +194,50 @@ class BarnamyClient(LineReceiver):
         self.unpacker.feed(data)
         data = self.unpacker.unpack()
         
-        if self.schema.status_schema_f(data): self.app.recv_status_before_login(data)
+        if self.schema.status_schema_f(data): BARNAMY_APP.recv_status_before_login(data)
 
-        if self.schema.status_schema_user_f(data): self.app.barnamy_chat_window_ins.recv_status_user(data)
+        if self.schema.status_schema_user_f(data): BARNAMY_APP.barnamy_chat_window_ins.recv_status_user(data)
 
-        if self.schema.login_nok_schema_f(data): self.app.recv_login_nok(data)
+        if self.schema.login_nok_schema_f(data): BARNAMY_APP.recv_login_nok(data)
 
-        if self.schema.error_schema_f(data): self.app.recv_error_schema(data)
+        if self.schema.error_schema_f(data): BARNAMY_APP.recv_error_schema(data)
 
-        if self.schema.info_user_schema_user_f(data): self.app.barnamy_chat_window_ins.recv_info_user(data)
+        if self.schema.info_user_schema_user_f(data): BARNAMY_APP.barnamy_chat_window_ins.recv_info_user(data)
+
+        if self.schema.check_token_id_schema_f(data):
+            TOKEN_ID[0] = (data["token_id"])
+            NICK[0] = (data["nick"])
+            BARNAMY_APP.recv_login_users(data)
 
         if self.schema.user_join_left_schema_f(data):
-            self.app.barnamy_chat_window_ins.recv_user_join_left(data)
-            self.app.barnamy_chat_window_ins.barnamy_user_list.recv_user_join_left_prv(data)
+            BARNAMY_APP.barnamy_chat_window_ins.recv_user_join_left(data)
+            BARNAMY_APP.barnamy_chat_window_ins.barnamy_user_list.recv_user_join_left_prv(data)
             self.barnamy_actions['_notify']("Barnamy", data['user_join_left'])
 
         if self.schema.access_folder_schema_f(data):
-            self.app.barnamy_chat_window_ins.recv_access_folder(data)
+            BARNAMY_APP.barnamy_chat_window_ins.recv_access_folder(data)
             self.barnamy_sound_setting['access_folder_sound']()
 
         if self.schema.access_folder_valid_schema_f(data):
-            self.app.barnamy_chat_window_ins.recv_access_folder_valid(data)
+            BARNAMY_APP.barnamy_chat_window_ins.recv_access_folder_valid(data)
 
         if self.schema.login_schema_f(data):
-            self.token_id = data["token_id"]
-            self.nick = data["nick"]
-            self.app.recv_login_users(data)
+            TOKEN_ID[0] = (data["token_id"])
+            NICK[0] = (data["nick"])
+            BARNAMY_APP.recv_login_users(data)
             self.barnamy_sound_setting['login_sound']()
 
         if self.schema.register_schema_f(data):
-            self.app.recv_register(data)
+            BARNAMY_APP.recv_register(data)
 
         if self.schema.public_message_f(data):
-            self.app.barnamy_chat_window_ins.recv_public_msg(data)
+            BARNAMY_APP.barnamy_chat_window_ins.recv_public_msg(data)
             if self.barnamy_setting_i.get_settings()['log']:
                 data['nick'] = data['from_']
                 self.barnamy_actions['_log'](data)
 
         if self.schema.private_message_f(data):
-            self.app.barnamy_chat_window_ins.barnamy_user_list.recv_prv_msg(data)
+            BARNAMY_APP.barnamy_chat_window_ins.barnamy_user_list.recv_prv_msg(data)
             self.barnamy_sound_setting['received_prv_msg_sound']()
             self.barnamy_actions['_notify']( data['from_'], data['msg'])
             self.barnamy_actions['_prv_log'](data)
@@ -269,28 +295,28 @@ class BarnamyClient(LineReceiver):
             passwd_f.write("%s:%s\n"%(nick, passwd))
             passwd_f.close()
 
-        data = {'type':'access_folder_valid', 'from_':self.nick, 'to_':nick, 'passwd':passwd, 'token_id':self.token_id}
+        data = {'type':'access_folder_valid', 'from_':NICK[0], 'to_':nick, 'passwd':passwd, 'token_id':TOKEN_ID[0]}
         self.sendLine(self.packer.pack(data))
 
     def get_info(self, nick):
-        data = {'type':'info', 'from_' : self.nick , 'nick' : nick, 'token_id':self.token_id}
+        data = {'type':'info', 'from_' : NICK[0] , 'nick' : nick, 'token_id':TOKEN_ID[0]}
         self.sendLine(self.packer.pack(data))
 
     def ignore_user(self, nick):
-        data = {'type':'ignore', 'nick':nick, 'token_id':self.token_id}
+        data = {'type':'ignore', 'nick':nick, 'token_id':TOKEN_ID[0]}
         self.sendLine(self.packer.pack(data))
 
     def unignore_user(self, nick):
-        data = {'type':'unignore', 'nick':nick, 'token_id':self.token_id}
+        data = {'type':'unignore', 'nick':nick, 'token_id':TOKEN_ID[0]}
         self.sendLine(self.packer.pack(data))
 
     def call_quote(self):
         quote = None
         if self.get_settings()['tls']:
-            response = urllib2.urlopen("https://" + self.get_settings()['ip'] + ":8083")
+            response = urllib2.urlopen("https://" + self.get_settings()['ip'] + ":28083")
             quote = json.load(response)
         else:
-             response = urllib2.urlopen("http://" + self.get_settings()['ip'] + ":8081")
+             response = urllib2.urlopen("http://" + self.get_settings()['ip'] + ":28081")
              quote = json.load(response)
         
         return quote
@@ -301,17 +327,25 @@ class BarnamyClient(LineReceiver):
     def stop_false_king_theme(self):
         self.BarnamyPlayer._stop_file()
 
-    # it is not implemented yet
     def get_msg_sent_up(self):
-        pass
+        self.msg_sent_position += 1
+        if self.msg_sent_position == len(self.msg_sent_list):
+            self.msg_sent_position -= 1
+        return self.msg_sent_list[self.msg_sent_position]
 
-    # it is not implemented yet
     def get_msg_sent_down(self):
-        pass
+        self.msg_sent_position -= 1
+        if self.msg_sent_position == -2:
+            return
+        if self.msg_sent_position == -1:
+            self.msg_sent_position += 1
+        return self.msg_sent_list[self.msg_sent_position]
 
     def set_msg_sent(self, msg):
-        self.msg_sent_list.append(msg)
-        self.msg_sent_position = len(self.msg_sent_list) - 1
+        if len(self.msg_sent_list) > 21:
+            self.msg_sent_list.pop()
+        self.msg_sent_list.insert(0, msg)
+        self.msg_sent_position = -1
 
     # It is not resolved
     def kick_user(self, data):
@@ -325,9 +359,10 @@ class BarnamyClientFactory(ReconnectingClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
         print('connection failed Please verify your settings:', reason.getErrorMessage())
-        self.done.errback(reason)
+        #self.done.errback(reason)
+        self.retry(connector)
 
     def clientConnectionLost(self, connector, reason):
         print('connection lost:', reason.getErrorMessage())
-        self.done.callback(None)
-
+        self.retry(connector)
+        #self.done.callback(None)

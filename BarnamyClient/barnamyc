@@ -8,9 +8,11 @@ IBRS = BRS()
 
 if IBRS.get_settings()['tls']:
     from twisted.internet import ssl
-    reactor.connectSSL(IBRS.get_settings()['ip'], IBRS.get_settings()['port'], Base.BarnamyClientBase.BarnamyClientFactory(), ssl.ClientContextFactory())
+    reactor.connectSSL(IBRS.get_settings()['ip'], IBRS.get_settings()['port'], 
+    	Base.BarnamyClientBase.BarnamyClientFactory(), ssl.ClientContextFactory())
 else:
-    reactor.connectTCP(IBRS.get_settings()['ip'], IBRS.get_settings()['port'], Base.BarnamyClientBase.BarnamyClientFactory())
+    reactor.connectTCP(IBRS.get_settings()['ip'], IBRS.get_settings()['port'], 
+    	Base.BarnamyClientBase.BarnamyClientFactory())
 
 reactor.run()
 
